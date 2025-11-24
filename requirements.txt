@@ -1,0 +1,13 @@
+# Core dependencies
+ttkbootstrap>=1.10.1
+reportlab>=4.0.0
+qrcode>=7.4.2
+
+# Testing dependencies
+hypothesis>=6.90.0
+pytest>=7.4.0
+pytest-cov>=4.1.0
+faker>=20.0.0
+
+# Security
+bcrypt>=4.1.0
