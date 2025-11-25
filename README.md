@@ -69,7 +69,9 @@ A comprehensive desktop application for managing mobile phone shop operations in
 - Backup and restore functionality
 - System health checks
 
-## 🚀 Quick Start Guide
+## 🚀 Quick Start
+
+> **⚡ Want to get started fast?** Check out [QUICK_START.md](QUICK_START.md) for a 5-minute setup!
 
 ### Prerequisites
 
