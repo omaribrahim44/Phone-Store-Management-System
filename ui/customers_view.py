@@ -365,6 +365,11 @@ class CustomersFrame:
                 messagebox.showerror("Error", "Customer not found")
                 return
             
+            # Verify customer is a tuple/list with expected structure
+            if not isinstance(customer, (tuple, list)) or len(customer) < 12:
+                messagebox.showerror("Error", f"Invalid customer data structure. Got: {type(customer)}")
+                return
+            
             # Create detail window with better size
             detail_win = tb.Toplevel(self.frame)
             detail_win.title(f"Customer Details - {customer[1]}")
@@ -441,13 +446,13 @@ class CustomersFrame:
             purchase_card = tb.Frame(stats_container, bootstyle="success", padding=20)
             purchase_card.grid(row=0, column=0, sticky="ew", padx=8, pady=5)
             tb.Label(purchase_card, text="🛒 Purchases", font=("Segoe UI", 11, "bold"), bootstyle="success-inverse").pack(pady=(0, 8))
-            tb.Label(purchase_card, text=str(customer[6] or 0), font=("Segoe UI", 28, "bold"), bootstyle="success-inverse").pack()
+            tb.Label(purchase_card, text=str(customer[9] or 0), font=("Segoe UI", 28, "bold"), bootstyle="success-inverse").pack()
             
             # Repairs card
             repair_card = tb.Frame(stats_container, bootstyle="primary", padding=20)
             repair_card.grid(row=0, column=1, sticky="ew", padx=8, pady=5)
             tb.Label(repair_card, text="🔧 Repairs", font=("Segoe UI", 11, "bold"), bootstyle="primary-inverse").pack(pady=(0, 8))
-            tb.Label(repair_card, text=str(customer[7] or 0), font=("Segoe UI", 28, "bold"), bootstyle="primary-inverse").pack()
+            tb.Label(repair_card, text=str(customer[10] or 0), font=("Segoe UI", 28, "bold"), bootstyle="primary-inverse").pack()
             
             # Total spent card
             spent_card = tb.Frame(stats_container, bootstyle="info", padding=20)
@@ -455,7 +460,7 @@ class CustomersFrame:
             tb.Label(spent_card, text="💰 Total Spent", font=("Segoe UI", 11, "bold"), bootstyle="info-inverse").pack(pady=(0, 8))
             # Convert to float safely
             try:
-                spent_amount = float(customer[8]) if customer[8] else 0.0
+                spent_amount = float(customer[11]) if customer[11] else 0.0
                 spent_text = f"EGP {spent_amount:,.0f}"
             except (ValueError, TypeError):
                 spent_text = "EGP 0"
@@ -467,9 +472,9 @@ class CustomersFrame:
             activity_frame.columnconfigure(1, weight=1)
             
             activity_details = [
-                ("Last Purchase:", customer[9][:10] if customer[9] else "Never"),
-                ("Last Repair:", customer[10][:10] if customer[10] else "Never"),
-                ("Customer Since:", customer[11][:10] if customer[11] else "N/A"),
+                ("Last Purchase:", customer[7][:10] if customer[7] and len(customer) > 7 else "Never"),
+                ("Last Repair:", customer[8][:10] if customer[8] and len(customer) > 8 else "Never"),
+                ("Customer Since:", customer[6][:10] if customer[6] and len(customer) > 6 else "N/A"),
             ]
             
             for idx, (label, value) in enumerate(activity_details):

@@ -11,6 +11,9 @@ class InventoryFrame:
         self.frame.columnconfigure(0, weight=1)
         self.frame.rowconfigure(2, weight=1)
         
+        # Callback for when inventory changes (to notify other views)
+        self.on_inventory_change = None
+        
         # --- Header Section ---
         header_frame = tb.Frame(self.frame)
         header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 25))
@@ -26,12 +29,29 @@ class InventoryFrame:
         actions = tb.Frame(header_frame)
         actions.grid(row=0, column=2, sticky="e")
         
+        # Quick quantity adjustment buttons
+        tb.Button(
+            actions, 
+            text="➕ Add Stock", 
+            bootstyle="success-outline", 
+            command=self.quick_add_stock,
+            width=13
+        ).pack(side="right", padx=5)
+        
+        tb.Button(
+            actions, 
+            text="➖ Remove Stock", 
+            bootstyle="warning-outline", 
+            command=self.quick_remove_stock,
+            width=15
+        ).pack(side="right", padx=5)
+        
         tb.Button(
             actions, 
             text="➕ Add Item", 
             bootstyle="success", 
             command=self.add_item_dialog,
-            width=14
+            width=12
         ).pack(side="right", padx=5)
         
         tb.Button(
@@ -39,7 +59,7 @@ class InventoryFrame:
             text="🗑️ Delete", 
             bootstyle="danger", 
             command=self.delete_selected_item,
-            width=12
+            width=10
         ).pack(side="right", padx=5)
         
         tb.Button(
@@ -47,7 +67,7 @@ class InventoryFrame:
             text="🔄 Refresh", 
             bootstyle="primary", 
             command=self.refresh,
-            width=12
+            width=10
         ).pack(side="right", padx=5)
         
         tb.Button(
@@ -55,7 +75,7 @@ class InventoryFrame:
             text="📤 Export", 
             bootstyle="info-outline", 
             command=self.export_csv,
-            width=12
+            width=10
         ).pack(side="right", padx=5)
         
         # --- Search & Filter Bar ---
@@ -63,9 +83,12 @@ class InventoryFrame:
         filter_frame.grid(row=1, column=0, sticky="ew", pady=(0, 20))
         filter_frame.columnconfigure(1, weight=1)
         
+        # Initialize variables first to avoid AttributeError
+        self.search_var = tb.StringVar()
+        self.low_stock_var = tb.BooleanVar(value=False)
+        
         # Search box with placeholder
         tb.Label(filter_frame, text="Search:", font=("Segoe UI", 11, "bold")).grid(row=0, column=0, sticky="w", padx=(0, 10))
-        self.search_var = tb.StringVar()
         self.search_var.trace("w", self.filter_items)
         search_entry = tb.Entry(filter_frame, textvariable=self.search_var, font=("Segoe UI", 11))
         search_entry.grid(row=0, column=1, sticky="ew", padx=(0, 20))
@@ -95,8 +118,7 @@ class InventoryFrame:
         
         add_placeholder(search_entry, "Search by SKU, name, category...")
         
-        # Low stock filter
-        self.low_stock_var = tb.BooleanVar(value=False)
+        # Low stock filter (variable already initialized above)
         tb.Checkbutton(
             filter_frame, 
             text="⚠️ Low Stock Only (< 5)", 
@@ -194,6 +216,28 @@ class InventoryFrame:
         hsb.grid(row=1, column=0, sticky="ew")
         self.tree.configure(xscrollcommand=hsb.set)
         
+        # Right-click context menu for quick actions
+        self.context_menu = tb.Menu(self.tree, tearoff=0)
+        self.context_menu.add_command(label="➕ Add 1 to Stock", command=lambda: self.adjust_stock(1))
+        self.context_menu.add_command(label="➕ Add 5 to Stock", command=lambda: self.adjust_stock(5))
+        self.context_menu.add_command(label="➕ Add 10 to Stock", command=lambda: self.adjust_stock(10))
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="➖ Remove 1 from Stock", command=lambda: self.adjust_stock(-1))
+        self.context_menu.add_command(label="➖ Remove 5 from Stock", command=lambda: self.adjust_stock(-5))
+        self.context_menu.add_command(label="➖ Remove 10 from Stock", command=lambda: self.adjust_stock(-10))
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="✏️ Edit Item", command=self.edit_selected_item)
+        self.context_menu.add_command(label="🗑️ Delete Item", command=self.delete_selected_item)
+        
+        def show_context_menu(event):
+            # Select the item under cursor
+            item = self.tree.identify_row(event.y)
+            if item:
+                self.tree.selection_set(item)
+                self.context_menu.post(event.x_root, event.y_root)
+        
+        self.tree.bind("<Button-3>", show_context_menu)  # Right-click
+        
         # Total Value Summary
         summary_frame = tb.Frame(table_frame, padding=15)
         summary_frame.grid(row=2, column=0, columnspan=2, sticky="ew")
@@ -219,6 +263,10 @@ class InventoryFrame:
             messagebox.showerror("Error", f"Could not load inventory: {e}")
 
     def filter_items(self, *args):
+        # Safety check - ensure initialization is complete
+        if not hasattr(self, 'low_stock_var') or not hasattr(self, 'tree'):
+            return
+            
         # Get search query, handling placeholder
         query = self.search_var.get().lower()
         # Skip filtering if it's the placeholder text
@@ -412,9 +460,51 @@ class InventoryFrame:
             entry.insert(0, entry.placeholder)
             entry.config(foreground=entry.placeholder_color)
         
+        # Barcode Scanner Field (at the top for easy scanning)
+        barcode_frame = tb.Labelframe(form_container, text="📷 Barcode Scanner", padding=15, bootstyle="info")
+        barcode_frame.pack(fill="x", pady=(0, 20))
+        
+        tb.Label(
+            barcode_frame, 
+            text="Scan barcode with your scanner device (it will auto-fill SKU)",
+            font=("Segoe UI", 10, "italic"),
+            foreground="#6c757d"
+        ).pack(anchor="w", pady=(0, 8))
+        
+        barcode_entry = tb.Entry(barcode_frame, font=("Segoe UI", 12))
+        barcode_entry.pack(fill="x")
+        barcode_entry.focus()  # Auto-focus for immediate scanning
+        
         # Form fields with placeholders
         e_sku = create_field(form_container, "SKU (Stock Keeping Unit)", is_required=True)
         add_placeholder(e_sku, "e.g., IP14-BLK-128")
+        
+        # Barcode scan handler - when Enter is pressed, copy to SKU
+        def on_barcode_scan(event):
+            scanned_code = barcode_entry.get().strip()
+            if scanned_code:
+                # Clear placeholder if present
+                if hasattr(e_sku, 'has_placeholder') and e_sku.has_placeholder:
+                    e_sku.delete(0, 'end')
+                    e_sku.config(foreground=e_sku.default_color)
+                    e_sku.has_placeholder = False
+                else:
+                    e_sku.delete(0, 'end')
+                
+                # Set the scanned barcode as SKU
+                e_sku.insert(0, scanned_code)
+                
+                # Clear barcode field
+                barcode_entry.delete(0, 'end')
+                
+                # Move focus to name field
+                e_name.focus()
+                
+                # Show success feedback
+                barcode_entry.config(bootstyle="success")
+                win.after(500, lambda: barcode_entry.config(bootstyle=""))
+        
+        barcode_entry.bind("<Return>", on_barcode_scan)
         
         e_name = create_field(form_container, "Item Name", is_required=True)
         add_placeholder(e_name, "e.g., iPhone 14 Pro Max")
@@ -581,6 +671,9 @@ class InventoryFrame:
                 messagebox.showinfo("✓ Success", f"Item '{name}' has been added to inventory!")
                 win.destroy()
                 self.refresh()
+                # Notify ALL views that inventory changed
+                from modules.event_manager import event_manager
+                event_manager.notify('inventory_changed', {'action': 'add', 'item': name})
             else:
                 validation_label.configure(
                     text="❌ Could not add item. SKU might already exist.",
@@ -644,6 +737,9 @@ class InventoryFrame:
             if InventoryController.delete_item(item_id, name, sku):
                 messagebox.showinfo("✓ Success", f"Item '{name}' has been deleted from inventory")
                 self.refresh()
+                # Notify ALL views that inventory changed
+                from modules.event_manager import event_manager
+                event_manager.notify('inventory_changed', {'action': 'delete', 'item': name})
             else:
                 messagebox.showerror("Error", "Could not delete item. Check logs for details.")
         except Exception as e:
@@ -663,3 +759,122 @@ class InventoryFrame:
             for r in rows:
                 writer.writerow(r)
         messagebox.showinfo("Exported", f"Exported {len(rows)} rows to {fn}")
+    
+    def quick_add_stock(self):
+        """Quick add stock to selected item"""
+        selection = self.tree.selection()
+        if not selection:
+            messagebox.showwarning("No Selection", "Please select an item to add stock")
+            return
+        
+        # Ask for quantity to add
+        qty = simpledialog.askinteger(
+            "Add Stock",
+            "How many units to add?",
+            initialvalue=1,
+            minvalue=1,
+            maxvalue=1000
+        )
+        
+        if qty:
+            self.adjust_stock(qty)
+    
+    def quick_remove_stock(self):
+        """Quick remove stock from selected item"""
+        selection = self.tree.selection()
+        if not selection:
+            messagebox.showwarning("No Selection", "Please select an item to remove stock")
+            return
+        
+        # Ask for quantity to remove
+        qty = simpledialog.askinteger(
+            "Remove Stock",
+            "How many units to remove?",
+            initialvalue=1,
+            minvalue=1,
+            maxvalue=1000
+        )
+        
+        if qty:
+            self.adjust_stock(-qty)
+    
+    def adjust_stock(self, adjustment):
+        """Adjust stock quantity for selected item"""
+        selection = self.tree.selection()
+        if not selection:
+            messagebox.showwarning("No Selection", "Please select an item")
+            return
+        
+        # Get item details
+        item_values = self.tree.item(selection[0])['values']
+        item_id = item_values[0]
+        sku = item_values[1]
+        name = item_values[2]
+        current_qty = int(item_values[4])
+        
+        # Calculate new quantity
+        new_qty = current_qty + adjustment
+        
+        # Validate
+        if new_qty < 0:
+            messagebox.showwarning(
+                "Invalid Quantity",
+                f"Cannot remove {abs(adjustment)} units.\nCurrent stock: {current_qty}"
+            )
+            return
+        
+        # Update in database
+        try:
+            from controllers.inventory_controller import InventoryController
+            
+            # Get full item data
+            item_data = None
+            for row in self.all_items:
+                if row[0] == item_id:
+                    item_data = row
+                    break
+            
+            if not item_data:
+                messagebox.showerror("Error", "Item not found")
+                return
+            
+            # Update quantity (keeping other fields the same)
+            # row: id, sku, name, category, qty, buy_price, sell_price
+            success = InventoryController.update_item(
+                item_id=item_id,
+                sku=sku,
+                name=name,
+                category=item_data[3],
+                qty=new_qty,
+                buy_price=item_data[5],
+                sell_price=item_data[6],
+                description=None
+            )
+            
+            if success:
+                action = "Added" if adjustment > 0 else "Removed"
+                messagebox.showinfo(
+                    "✓ Success",
+                    f"{action} {abs(adjustment)} unit(s)\n\n"
+                    f"Item: {name}\n"
+                    f"Previous: {current_qty}\n"
+                    f"New Stock: {new_qty}"
+                )
+                self.refresh()
+                
+                # Notify ALL views that inventory changed
+                from modules.event_manager import event_manager
+                event_manager.notify('inventory_changed', {'action': 'adjust_stock', 'item': name, 'adjustment': adjustment})
+            else:
+                messagebox.showerror("Error", "Failed to update stock")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to adjust stock: {e}")
+    
+    def edit_selected_item(self):
+        """Edit the selected item (placeholder for future implementation)"""
+        selection = self.tree.selection()
+        if not selection:
+            messagebox.showwarning("No Selection", "Please select an item to edit")
+            return
+        
+        messagebox.showinfo("Coming Soon", "Edit functionality will be added in a future update")

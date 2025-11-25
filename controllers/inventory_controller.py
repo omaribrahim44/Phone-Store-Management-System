@@ -24,6 +24,19 @@ class InventoryController:
         return models.get_item_cost(name_or_sku)
     
     @staticmethod
+    def update_item(item_id, sku, name, category, qty, buy_price, sell_price, description=None):
+        """Update an inventory item"""
+        success = models.update_inventory_item(item_id, sku, name, category, qty, buy_price, sell_price, description)
+        if success:
+            log_action(
+                user="System",
+                action_type="UPDATE",
+                entity_type="inventory",
+                description=f"Updated inventory item: {name} (SKU: {sku}, New Qty: {qty})"
+            )
+        return success
+    
+    @staticmethod
     def delete_item(item_id, item_name, sku):
         """Delete an inventory item by ID"""
         success = models.delete_inventory_item(item_id)

@@ -134,6 +134,67 @@ def add_inventory_item(sku: str, name: str, qty: int, buy: float, sell: float, c
         return False
 
 
+def update_inventory_item(item_id: int, sku: str, name: str, category: str, qty: int, buy_price: float, sell_price: float, description: str = None) -> bool:
+    """
+    Update an inventory item.
+    
+    Args:
+        item_id: Item ID to update
+        sku: Stock keeping unit
+        name: Item name
+        category: Item category
+        qty: Quantity
+        buy_price: Buy price
+        sell_price: Sell price
+        description: Optional description
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    from modules.validators import validate_quantity, validate_price
+    from modules.transaction_manager import transaction
+    
+    # Validate inputs
+    qty_result = validate_quantity(qty)
+    if not qty_result.valid:
+        print(f"update_inventory_item validation error: {qty_result.error_message}")
+        return False
+    
+    buy_result = validate_price(buy_price)
+    if not buy_result.valid:
+        print(f"update_inventory_item validation error: {buy_result.error_message}")
+        return False
+    
+    sell_result = validate_price(sell_price)
+    if not sell_result.valid:
+        print(f"update_inventory_item validation error: {sell_result.error_message}")
+        return False
+    
+    # Use validated values
+    qty = qty_result.normalized_value
+    buy_price = buy_result.normalized_value
+    sell_price = sell_result.normalized_value
+    
+    # Execute in transaction
+    try:
+        with transaction() as conn:
+            c = conn.cursor()
+            if description is not None:
+                c.execute(
+                    "UPDATE inventory SET sku=?, name=?, category=?, quantity=?, buy_price=?, sell_price=?, description=? WHERE item_id=?",
+                    (sku, name, category, qty, buy_price, sell_price, description, item_id)
+                )
+            else:
+                c.execute(
+                    "UPDATE inventory SET sku=?, name=?, category=?, quantity=?, buy_price=?, sell_price=? WHERE item_id=?",
+                    (sku, name, category, qty, buy_price, sell_price, item_id)
+                )
+        return True
+    except Exception as e:
+        print("update_inventory_item error:", e)
+        return False
+
+
 def get_inventory():
     """
     Get all inventory items.
@@ -907,6 +968,106 @@ def create_sale(customer_name: str, items: list, customer_id: int = None) -> int
                           (qty, item_id))
         
         return sale_id
+    except ValueError as ve:
+        print(f"create_sale validation error: {ve}")
+        return None
+    except Exception as e:
+        print(f"create_sale error: {e}")
+        return None
+
+
+def create_sale_detailed(customer_name: str, customer_id: int, customer_phone: str, customer_email: str,
+                        customer_address: str, items: list, subtotal: float, discount_percent: float,
+                        discount_amount: float, total_amount: float, seller_name: str = "System",
+                        payment_method: str = "Cash", notes: str = None) -> int:
+    """
+    Create a comprehensive sale record with all details for reporting.
+    
+    Args:
+        customer_name: Customer name
+        customer_id: Customer ID (can be None)
+        customer_phone: Customer phone
+        customer_email: Customer email
+        customer_address: Customer address
+        items: List of dicts with keys: id, sku, name, category, qty, price, cost
+        subtotal: Subtotal before discount
+        discount_percent: Discount percentage
+        discount_amount: Discount amount in currency
+        total_amount: Final total after discount
+        seller_name: Name of seller
+        payment_method: Payment method
+        notes: Additional notes
+    
+    Returns:
+        sale_id if successful, None otherwise
+    """
+    from modules.transaction_manager import transaction
+    from datetime import datetime
+    
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    time_str = datetime.now().strftime("%H:%M:%S")
+    
+    try:
+        with transaction() as conn:
+            c = conn.cursor()
+            
+            # Check inventory availability for all items BEFORE making any changes
+            for item in items:
+                item_id = item['id']
+                qty = item['qty']
+                
+                c.execute("SELECT quantity FROM inventory WHERE item_id = ?", (item_id,))
+                row = c.fetchone()
+                if not row:
+                    raise ValueError(f"Item with ID {item_id} not found")
+                
+                available_qty = row[0]
+                if available_qty < qty:
+                    raise ValueError(f"Insufficient inventory for item {item_id}: available={available_qty}, requested={qty}")
+            
+            # Create comprehensive sale record
+            c.execute("""
+                INSERT INTO sales (
+                    sale_date, sale_time, customer_id, customer_name, customer_phone,
+                    customer_email, customer_address, subtotal, discount_percent,
+                    discount_amount, total_amount, seller_name, payment_method, notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (date_str, time_str, customer_id, customer_name, customer_phone,
+                  customer_email, customer_address, subtotal, discount_percent,
+                  discount_amount, total_amount, seller_name, payment_method, notes))
+            
+            sale_id = c.lastrowid
+            
+            # Add detailed sale items and update inventory
+            for item in items:
+                item_id = item['id']
+                sku = item['sku']
+                name = item['name']
+                category = item.get('category', 'Unknown')
+                qty = item['qty']
+                unit_price = item['price']
+                cost_price = item['cost']
+                line_total = qty * unit_price
+                profit = (unit_price - cost_price) * qty
+                
+                c.execute("""
+                    INSERT INTO sale_items (
+                        sale_id, item_id, item_sku, item_name, item_category,
+                        quantity, unit_price, cost_price, line_total, profit
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (sale_id, item_id, sku, name, category, qty, unit_price, cost_price, line_total, profit))
+                
+                # Update inventory
+                c.execute("UPDATE inventory SET quantity = quantity - ? WHERE item_id = ?", (qty, item_id))
+        
+        return sale_id
+    
+    except ValueError as ve:
+        print(f"create_sale_detailed validation error: {ve}")
+        return None
+    except Exception as e:
+        print(f"create_sale_detailed error: {e}")
+        return None
     except Exception as e:
         print(f"create_sale error: {e}")
         return None

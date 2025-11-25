@@ -4,10 +4,24 @@ from modules.audit_logger import log_action
 
 class POSController:
     @staticmethod
-    def create_sale(customer_name, items, customer_phone=None, customer_email=None, customer_address=None):
+    def create_sale(customer_name, items, customer_phone=None, customer_email=None, customer_address=None, 
+                   seller_name="System", discount_percent=0, payment_method="Cash", notes=None):
         """
-        items: list of tuples (item_id, qty, unit_price, cost_price)
-        Creates sale and links to customer
+        Create a comprehensive sale record with all details for reporting.
+        
+        Args:
+            customer_name: Customer name
+            items: list of dicts with keys: id, sku, name, category, qty, price, cost
+            customer_phone: Customer phone (optional)
+            customer_email: Customer email (optional)
+            customer_address: Customer address (optional)
+            seller_name: Name of the person making the sale
+            discount_percent: Discount percentage applied
+            payment_method: Payment method (Cash, Card, etc.)
+            notes: Additional notes about the sale
+        
+        Returns:
+            sale_id if successful, None otherwise
         """
         # Get or create customer
         customer_id = None
@@ -20,22 +34,39 @@ class POSController:
                 customer_type='Sales'
             )
         
-        # Create sale
-        sale_id = models.create_sale(customer_name, items, customer_id)
+        # Calculate totals
+        subtotal = sum([i['qty'] * i['price'] for i in items])
+        discount_amount = (subtotal * discount_percent) / 100
+        total = subtotal - discount_amount
+        
+        # Create comprehensive sale record
+        sale_id = models.create_sale_detailed(
+            customer_name=customer_name,
+            customer_id=customer_id,
+            customer_phone=customer_phone,
+            customer_email=customer_email,
+            customer_address=customer_address,
+            items=items,
+            subtotal=subtotal,
+            discount_percent=discount_percent,
+            discount_amount=discount_amount,
+            total_amount=total,
+            seller_name=seller_name,
+            payment_method=payment_method,
+            notes=notes
+        )
         
         if sale_id:
-            total = sum([i[1] * i[2] for i in items])
-            
             # Update customer statistics
             if customer_id:
                 models.update_customer_purchase(customer_id, total)
             
             log_action(
-                user=customer_name,
+                user=seller_name,
                 action_type="CREATE",
                 entity_type="sale",
                 entity_id=sale_id,
-                description=f"Created sale for {customer_name}, total: {total:.2f}"
+                description=f"Sale by {seller_name} for {customer_name}, items: {len(items)}, total: EGP {total:.2f}"
             )
         return sale_id
     

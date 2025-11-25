@@ -135,3 +135,12 @@ backups/*.db
 # Build artifacts
 build/
 dist/
+
+# Kiro IDE specs (development only)
+.kiro/
+
+# Database file (local only)
+shop.db
+
+# Config file (local settings)
+shop_config.json

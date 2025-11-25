@@ -9,233 +9,256 @@ from controllers.inventory_controller import InventoryController
 
 class SalesFrame:
     def __init__(self, parent):
-        self.frame = tb.Frame(parent, padding=25)
+        self.frame = tb.Frame(parent, padding=20)
         self.cart = []  # list of dicts: {id, sku, name, qty, price, cost, max_qty}
         
-        # Layout: Left (Inventory Search), Right (Cart & Checkout) - Bigger proportions
-        self.frame.columnconfigure(0, weight=2)  # Left panel bigger
-        self.frame.columnconfigure(1, weight=3)  # Right panel even bigger
+        # Callback for when sale completes (to notify other views)
+        self.on_sale_complete = None
+        
+        # Simple 2-column layout
+        self.frame.columnconfigure(0, weight=1)
+        self.frame.columnconfigure(1, weight=1)
         self.frame.rowconfigure(0, weight=1)
         
-        # --- Left Panel: Product Selection ---
-        left_panel = tb.Labelframe(self.frame, text="📦 Product Selection", padding=20, bootstyle="info")
-        left_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 20))
+        # --- LEFT PANEL: Product Selection ---
+        left_panel = tb.Frame(self.frame)
+        left_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        left_panel.columnconfigure(0, weight=1)
         left_panel.rowconfigure(3, weight=1)
         
-        # Search & Filter
+        # Title
+        tb.Label(left_panel, text="📦 Product Selection", font=("Segoe UI", 16, "bold")).grid(row=0, column=0, sticky="w", pady=(0, 15))
+        
+        # Search
         search_frame = tb.Frame(left_panel)
-        search_frame.grid(row=0, column=0, sticky="ew", pady=(0, 15))
+        search_frame.grid(row=1, column=0, sticky="ew", pady=(0, 10))
         search_frame.columnconfigure(1, weight=1)
         
-        tb.Label(search_frame, text="🔍 Search:", font=("Segoe UI", 12, "bold")).grid(row=0, column=0, sticky="w", padx=(0, 10))
+        tb.Label(search_frame, text="Search:", font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w", padx=(0, 10))
         self.search_var = tb.StringVar()
         self.search_var.trace("w", self.filter_inventory)
-        search_entry = tb.Entry(search_frame, textvariable=self.search_var, font=("Segoe UI", 12))
-        search_entry.grid(row=0, column=1, sticky="ew")
-        search_entry.focus()
+        tb.Entry(search_frame, textvariable=self.search_var, font=("Segoe UI", 11)).grid(row=0, column=1, sticky="ew")
         
-        # Category Filter
+        # Category filter
         filter_frame = tb.Frame(left_panel)
-        filter_frame.grid(row=1, column=0, sticky="ew", pady=(0, 15))
-        tb.Label(filter_frame, text="📂 Category:", font=("Segoe UI", 11, "bold")).pack(side="left", padx=(0, 10))
-        self.category_filter = tb.Combobox(filter_frame, values=["All", "Mobile", "Covers", "Charger", "AirPods", "Accessories", "Parts", "Other"], state="readonly", width=20, font=("Segoe UI", 11))
+        filter_frame.grid(row=2, column=0, sticky="ew", pady=(0, 10))
+        
+        tb.Label(filter_frame, text="Category:", font=("Segoe UI", 10)).pack(side="left", padx=(0, 10))
+        self.category_filter = tb.Combobox(filter_frame, values=["All", "Mobile", "Covers", "Charger", "AirPods", "Accessories", "Parts", "Other"], state="readonly", width=15, font=("Segoe UI", 10))
         self.category_filter.set("All")
         self.category_filter.pack(side="left")
         self.category_filter.bind("<<ComboboxSelected>>", self.filter_inventory)
         
-        # Product Info Display - Bigger
-        info_frame = tb.Labelframe(left_panel, text="📋 Product Details", padding=15, bootstyle="secondary")
-        info_frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(0, 15))
+        # Inventory table
+        inv_frame = tb.Frame(left_panel)
+        inv_frame.grid(row=3, column=0, sticky="nsew", pady=(0, 10))
+        inv_frame.columnconfigure(0, weight=1)
+        inv_frame.rowconfigure(0, weight=1)
         
-        self.product_info = tb.Label(info_frame, text="Select a product to view details", font=("Segoe UI", 11), justify="left", wraplength=700)
-        self.product_info.pack(fill="x")
+        cols = ("id", "sku", "name", "stock", "price")
+        self.inv_tree = ttk.Treeview(inv_frame, columns=cols, show="headings", height=20)
+        self.inv_tree.heading("id", text="ID")
+        self.inv_tree.heading("sku", text="SKU")
+        self.inv_tree.heading("name", text="Product Name")
+        self.inv_tree.heading("stock", text="Stock")
+        self.inv_tree.heading("price", text="Price")
         
-        # Inventory List with color-coded stock - Bigger
-        cols = ("id", "sku", "name", "category", "stock", "price")
-        self.inv_tree = ttk.Treeview(left_panel, columns=cols, show="headings", height=20)
-        widths = {"id":60, "sku":120, "name":280, "category":140, "stock":80, "price":100}
-        alignments = {"id":"center", "sku":"w", "name":"w", "category":"w", "stock":"center", "price":"e"}
-        labels = {"id":"ID", "sku":"SKU", "name":"Product Name", "category":"Category", "stock":"Stock", "price":"Price"}
+        self.inv_tree.column("id", width=50, anchor="center")
+        self.inv_tree.column("sku", width=100, anchor="w")
+        self.inv_tree.column("name", width=250, anchor="w")
+        self.inv_tree.column("stock", width=80, anchor="center")
+        self.inv_tree.column("price", width=100, anchor="e")
         
-        for c in cols:
-            self.inv_tree.heading(c, text=labels.get(c, c.upper()), anchor="w" if alignments[c] == "w" else "center")
-            self.inv_tree.column(c, width=widths[c], anchor=alignments[c])
+        self.inv_tree.grid(row=0, column=0, sticky="nsew")
         
-        self.inv_tree.grid(row=3, column=0, sticky="nsew", pady=(0, 12))
-        
-        # Bind selection event to show product details
-        self.inv_tree.bind("<<TreeviewSelect>>", self.show_product_details)
-        
-        # Scrollbar
-        inv_scroll = ttk.Scrollbar(left_panel, orient="vertical", command=self.inv_tree.yview)
-        inv_scroll.grid(row=3, column=1, sticky="ns", pady=(0, 12))
+        inv_scroll = ttk.Scrollbar(inv_frame, orient="vertical", command=self.inv_tree.yview)
+        inv_scroll.grid(row=0, column=1, sticky="ns")
         self.inv_tree.configure(yscrollcommand=inv_scroll.set)
         
-        # Stock color tags with better colors
-        self.inv_tree.tag_configure("in_stock", foreground="#28a745", font=("Segoe UI", 10))
-        self.inv_tree.tag_configure("low_stock", foreground="#fd7e14", font=("Segoe UI", 10))
-        self.inv_tree.tag_configure("very_low", foreground="#dc3545", font=("Segoe UI", 10, "bold"))
-        self.inv_tree.tag_configure("out_of_stock", foreground="#6c757d", font=("Segoe UI", 10, "italic"))
+        # Stock color tags
+        self.inv_tree.tag_configure("in_stock", foreground="#28a745")
+        self.inv_tree.tag_configure("low_stock", foreground="#fd7e14", font=("Segoe UI", 10, "bold"))
+        self.inv_tree.tag_configure("out_of_stock", foreground="#dc3545", font=("Segoe UI", 10, "bold"))
         
-        # Alternating row colors
-        self.inv_tree.tag_configure('odd_row', background='#F8F9FA')
-        self.inv_tree.tag_configure('even_row', background='#FFFFFF')
-        
-        # Add to Cart Button - Larger and more prominent
-        tb.Button(left_panel, text="➕ Add to Cart", bootstyle="success", command=self.add_to_cart, width=25).grid(row=4, column=0, columnspan=2, sticky="ew", pady=(0, 0))
+        # Add button
+        tb.Button(left_panel, text="➕ Add to Cart", bootstyle="success", command=self.add_to_cart).grid(row=4, column=0, sticky="ew")
         
         # Double-click to add
         self.inv_tree.bind("<Double-1>", lambda e: self.add_to_cart())
-
-        # --- Right Panel: Cart & Checkout ---
-        right_panel = tb.Labelframe(self.frame, text="🛒 Current Sale", padding=20, bootstyle="primary")
-        right_panel.grid(row=0, column=1, sticky="nsew")
-        right_panel.rowconfigure(4, weight=1)
         
-        # Customer Information Section - Bigger with more fields
-        cust_section = tb.Labelframe(right_panel, text="👤 Customer Information", padding=15, bootstyle="info")
-        cust_section.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 15))
-        cust_section.columnconfigure(1, weight=1)
-        cust_section.columnconfigure(3, weight=1)
+        # --- RIGHT PANEL: Cart & Checkout ---
+        right_panel = tb.Frame(self.frame)
+        right_panel.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+        right_panel.columnconfigure(0, weight=1)
+        right_panel.rowconfigure(3, weight=1)  # Cart table row
+        
+        # Title
+        tb.Label(right_panel, text="🛒 Current Sale", font=("Segoe UI", 16, "bold")).grid(row=0, column=0, sticky="w", pady=(0, 15))
+        
+        # Customer info
+        cust_frame = tb.Labelframe(right_panel, text="Customer Information", padding=10)
+        cust_frame.grid(row=1, column=0, sticky="ew", pady=(0, 10))
+        cust_frame.columnconfigure(1, weight=1)
+        cust_frame.columnconfigure(3, weight=1)
         
         # Row 1: Name and Phone
-        tb.Label(cust_section, text="Name:", font=("Segoe UI", 11, "bold")).grid(row=0, column=0, sticky="w", padx=(0, 10), pady=6)
-        self.cust_name = tb.Entry(cust_section, font=("Segoe UI", 11))
-        self.cust_name.grid(row=0, column=1, sticky="ew", pady=6)
-        # Empty placeholder - no default text
+        tb.Label(cust_frame, text="Name:*", font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w", padx=(0, 10), pady=5)
+        self.cust_name = tb.Entry(cust_frame, font=("Segoe UI", 10))
+        self.cust_name.grid(row=0, column=1, sticky="ew", pady=5)
         
-        tb.Label(cust_section, text="Phone:", font=("Segoe UI", 11, "bold")).grid(row=0, column=2, sticky="w", padx=(15, 10), pady=6)
-        self.cust_phone = tb.Entry(cust_section, font=("Segoe UI", 11))
-        self.cust_phone.grid(row=0, column=3, sticky="ew", pady=6)
+        tb.Label(cust_frame, text="Phone:", font=("Segoe UI", 10)).grid(row=0, column=2, sticky="w", padx=(15, 10), pady=5)
+        self.cust_phone = tb.Entry(cust_frame, font=("Segoe UI", 10))
+        self.cust_phone.grid(row=0, column=3, sticky="ew", pady=5)
         self.cust_phone.bind("<KeyRelease>", self.search_customer)
         
         # Row 2: Email and Address
-        tb.Label(cust_section, text="Email:", font=("Segoe UI", 11, "bold")).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=6)
-        self.cust_email = tb.Entry(cust_section, font=("Segoe UI", 11))
-        self.cust_email.grid(row=1, column=1, sticky="ew", pady=6)
+        tb.Label(cust_frame, text="Email:", font=("Segoe UI", 10)).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
+        self.cust_email = tb.Entry(cust_frame, font=("Segoe UI", 10))
+        self.cust_email.grid(row=1, column=1, sticky="ew", pady=5)
         
-        tb.Label(cust_section, text="Address:", font=("Segoe UI", 11, "bold")).grid(row=1, column=2, sticky="w", padx=(15, 10), pady=6)
-        self.cust_address = tb.Entry(cust_section, font=("Segoe UI", 11))
-        self.cust_address.grid(row=1, column=3, sticky="ew", pady=6)
+        tb.Label(cust_frame, text="Address:", font=("Segoe UI", 10)).grid(row=1, column=2, sticky="w", padx=(15, 10), pady=5)
+        self.cust_address = tb.Entry(cust_frame, font=("Segoe UI", 10))
+        self.cust_address.grid(row=1, column=3, sticky="ew", pady=5)
         
-        # Customer Info Display
-        self.cust_info_label = tb.Label(cust_section, text="", font=("Segoe UI", 10, "italic"), foreground="#6c757d")
-        self.cust_info_label.grid(row=2, column=0, columnspan=4, sticky="w", pady=(6, 0))
+        # Customer info display with clear button
+        cust_info_container = tb.Frame(cust_frame)
+        cust_info_container.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(5, 0))
+        cust_info_container.columnconfigure(0, weight=1)
         
-        # Barcode Entry - Bigger
-        barcode_frame = tb.Frame(right_panel)
-        barcode_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 15))
-        barcode_frame.columnconfigure(1, weight=1)
+        self.cust_info_label = tb.Label(cust_info_container, text="", font=("Segoe UI", 9, "italic"), foreground="#6c757d")
+        self.cust_info_label.grid(row=0, column=0, sticky="w")
         
-        tb.Label(barcode_frame, text="🔍 Barcode/SKU:", font=("Segoe UI", 11, "bold")).grid(row=0, column=0, sticky="w", padx=(0, 10))
-        self.barcode_entry = tb.Entry(barcode_frame, font=("Segoe UI", 12))
-        self.barcode_entry.grid(row=0, column=1, sticky="ew")
+        self.clear_customer_btn = tb.Button(cust_info_container, text="❌ Clear", bootstyle="danger-outline", command=self.clear_customer_data)
+        # Don't grid yet - show when customer found
+        
+        # Track last found phone
+        self._last_found_phone = None
+        
+        # Barcode/SKU entry - Add as row 3 in customer frame
+        tb.Label(cust_frame, text="Barcode/SKU:", font=("Segoe UI", 10)).grid(row=3, column=0, sticky="w", padx=(0, 10), pady=5)
+        self.barcode_entry = tb.Entry(cust_frame, font=("Segoe UI", 11))
+        self.barcode_entry.grid(row=3, column=1, columnspan=3, sticky="ew", pady=5)
         self.barcode_entry.bind("<Return>", self.scan_barcode)
         
-        # Sale Info Display - Bigger cards
-        sale_info_frame = tb.Frame(right_panel)
-        sale_info_frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(0, 15))
-        sale_info_frame.columnconfigure(0, weight=1)
-        sale_info_frame.columnconfigure(1, weight=1)
-        sale_info_frame.columnconfigure(2, weight=1)
+        # Sale info cards - SMALLER AND COMPACT
+        info_frame = tb.Frame(right_panel)
+        info_frame.grid(row=2, column=0, sticky="ew", pady=(0, 5))
+        info_frame.columnconfigure(0, weight=1)
+        info_frame.columnconfigure(1, weight=1)
+        info_frame.columnconfigure(2, weight=1)
         
-        # Items Count
-        items_card = tb.Frame(sale_info_frame, bootstyle="info", padding=12)
-        items_card.grid(row=0, column=0, sticky="ew", padx=(0, 8))
-        tb.Label(items_card, text="Items", font=("Segoe UI", 10, "bold"), bootstyle="info-inverse").pack()
-        self.lbl_items_count = tb.Label(items_card, text="0", font=("Segoe UI", 20, "bold"), bootstyle="info-inverse")
+        items_card = tb.Frame(info_frame, bootstyle="info", padding=6)
+        items_card.grid(row=0, column=0, sticky="ew", padx=(0, 3))
+        tb.Label(items_card, text="Items", font=("Segoe UI", 8, "bold"), bootstyle="info-inverse").pack()
+        self.lbl_items_count = tb.Label(items_card, text="0", font=("Segoe UI", 12, "bold"), bootstyle="info-inverse")
         self.lbl_items_count.pack()
         
-        # Total Quantity
-        qty_card = tb.Frame(sale_info_frame, bootstyle="warning", padding=12)
-        qty_card.grid(row=0, column=1, sticky="ew", padx=8)
-        tb.Label(qty_card, text="Quantity", font=("Segoe UI", 10, "bold"), bootstyle="warning-inverse").pack()
-        self.lbl_total_qty = tb.Label(qty_card, text="0", font=("Segoe UI", 20, "bold"), bootstyle="warning-inverse")
+        qty_card = tb.Frame(info_frame, bootstyle="warning", padding=6)
+        qty_card.grid(row=0, column=1, sticky="ew", padx=3)
+        tb.Label(qty_card, text="Qty", font=("Segoe UI", 8, "bold"), bootstyle="warning-inverse").pack()
+        self.lbl_total_qty = tb.Label(qty_card, text="0", font=("Segoe UI", 12, "bold"), bootstyle="warning-inverse")
         self.lbl_total_qty.pack()
         
-        # Profit Estimate
-        profit_card = tb.Frame(sale_info_frame, bootstyle="secondary", padding=12)
-        profit_card.grid(row=0, column=2, sticky="ew", padx=(8, 0))
-        tb.Label(profit_card, text="Est. Profit", font=("Segoe UI", 10, "bold"), bootstyle="secondary-inverse").pack()
-        self.lbl_profit = tb.Label(profit_card, text="EGP 0", font=("Segoe UI", 20, "bold"), bootstyle="secondary-inverse")
+        profit_card = tb.Frame(info_frame, bootstyle="secondary", padding=6)
+        profit_card.grid(row=0, column=2, sticky="ew", padx=(3, 0))
+        tb.Label(profit_card, text="Profit", font=("Segoe UI", 8, "bold"), bootstyle="secondary-inverse").pack()
+        self.lbl_profit = tb.Label(profit_card, text="EGP 0", font=("Segoe UI", 12, "bold"), bootstyle="secondary-inverse")
         self.lbl_profit.pack()
         
-        # Cart Table - Bigger
-        c_cols = ("id", "sku", "name", "qty", "price", "total")
-        self.cart_tree = ttk.Treeview(right_panel, columns=c_cols, show="headings", height=15)
-        c_widths = {"id":60, "sku":120, "name":300, "qty":80, "price":120, "total":140}
-        c_alignments = {"id":"center", "sku":"w", "name":"w", "qty":"center", "price":"e", "total":"e"}
-        c_labels = {"id":"ID", "sku":"SKU", "name":"Product", "qty":"Qty", "price":"Unit Price", "total":"Total"}
+        # Cart table - MAXIMUM SIZE for better visualization
+        cart_frame = tb.Labelframe(right_panel, text="🛒 Cart Items", padding=10, bootstyle="primary")
+        cart_frame.grid(row=3, column=0, sticky="nsew", pady=(0, 8))
+        cart_frame.columnconfigure(0, weight=1)
+        cart_frame.rowconfigure(0, weight=1)
         
-        for c in c_cols:
-            self.cart_tree.heading(c, text=c_labels.get(c, c.upper()), anchor="w" if c_alignments[c] == "w" else "center")
-            self.cart_tree.column(c, width=c_widths[c], anchor=c_alignments[c])
+        c_cols = ("sku", "name", "qty", "stock", "price", "total")
+        self.cart_tree = ttk.Treeview(cart_frame, columns=c_cols, show="headings", height=22)  # MAXIMUM HEIGHT
+        self.cart_tree.heading("sku", text="SKU", anchor="w")
+        self.cart_tree.heading("name", text="Product Name", anchor="w")
+        self.cart_tree.heading("qty", text="Qty", anchor="center")
+        self.cart_tree.heading("stock", text="Available", anchor="center")
+        self.cart_tree.heading("price", text="Unit Price", anchor="e")
+        self.cart_tree.heading("total", text="Line Total", anchor="e")
         
-        self.cart_tree.grid(row=4, column=0, sticky="nsew", pady=(0, 15))
+        self.cart_tree.column("sku", width=120, anchor="w")
+        self.cart_tree.column("name", width=250, anchor="w")
+        self.cart_tree.column("qty", width=70, anchor="center")
+        self.cart_tree.column("stock", width=90, anchor="center")
+        self.cart_tree.column("price", width=100, anchor="e")
+        self.cart_tree.column("total", width=120, anchor="e")
         
-        # Cart scrollbar
-        cart_scroll = ttk.Scrollbar(right_panel, orient="vertical", command=self.cart_tree.yview)
-        cart_scroll.grid(row=4, column=1, sticky="ns", pady=(0, 15))
+        # Style for cart tree
+        style = ttk.Style()
+        style.configure("Treeview", rowheight=30, font=("Segoe UI", 11))
+        style.configure("Treeview.Heading", font=("Segoe UI", 11, "bold"))
+        
+        self.cart_tree.grid(row=0, column=0, sticky="nsew")
+        
+        cart_scroll = ttk.Scrollbar(cart_frame, orient="vertical", command=self.cart_tree.yview)
+        cart_scroll.grid(row=0, column=1, sticky="ns")
         self.cart_tree.configure(yscrollcommand=cart_scroll.set)
         
-        # Alternating row colors for cart
-        self.cart_tree.tag_configure('odd_cart', background='#F8F9FA')
-        self.cart_tree.tag_configure('even_cart', background='#FFFFFF')
+        # Cart buttons
+        cart_btn_frame = tb.Frame(right_panel)
+        cart_btn_frame.grid(row=4, column=0, sticky="ew", pady=(0, 10))
+        cart_btn_frame.columnconfigure(0, weight=1)
+        cart_btn_frame.columnconfigure(1, weight=1)
+        cart_btn_frame.columnconfigure(2, weight=1)
         
-        # Summary Section - Bigger
-        summary_frame = tb.Labelframe(right_panel, text="💰 Summary", padding=18, bootstyle="success")
-        summary_frame.grid(row=5, column=0, columnspan=2, sticky="ew", pady=(0, 15))
+        tb.Button(cart_btn_frame, text="Edit Qty", bootstyle="info-outline", command=self.edit_quantity).grid(row=0, column=0, sticky="ew", padx=(0, 5))
+        tb.Button(cart_btn_frame, text="Remove", bootstyle="warning-outline", command=self.remove_from_cart).grid(row=0, column=1, sticky="ew", padx=5)
+        tb.Button(cart_btn_frame, text="Clear Cart", bootstyle="danger-outline", command=self.clear_cart).grid(row=0, column=2, sticky="ew", padx=(5, 0))
+        
+        # Summary
+        summary_frame = tb.Labelframe(right_panel, text="Summary", padding=15)
+        summary_frame.grid(row=5, column=0, sticky="ew", pady=(0, 10))
         
         # Subtotal
-        subtotal_frame = tb.Frame(summary_frame)
-        subtotal_frame.pack(fill="x", pady=6)
-        tb.Label(subtotal_frame, text="Subtotal:", font=("Segoe UI", 13, "bold")).pack(side="left")
-        self.lbl_subtotal = tb.Label(subtotal_frame, text="EGP 0.00", font=("Segoe UI", 13, "bold"))
+        subtotal_row = tb.Frame(summary_frame)
+        subtotal_row.pack(fill="x", pady=5)
+        tb.Label(subtotal_row, text="Subtotal:", font=("Segoe UI", 11)).pack(side="left")
+        self.lbl_subtotal = tb.Label(subtotal_row, text="EGP 0.00", font=("Segoe UI", 11, "bold"))
         self.lbl_subtotal.pack(side="right")
         
         # Discount
-        discount_frame = tb.Frame(summary_frame)
-        discount_frame.pack(fill="x", pady=6)
-        tb.Label(discount_frame, text="Discount:", font=("Segoe UI", 12, "bold")).pack(side="left")
-        self.discount_var = tb.StringVar(value="0")
-        discount_entry = tb.Entry(discount_frame, textvariable=self.discount_var, width=14, font=("Segoe UI", 12))
+        discount_row = tb.Frame(summary_frame)
+        discount_row.pack(fill="x", pady=5)
+        tb.Label(discount_row, text="Discount %:", font=("Segoe UI", 11)).pack(side="left")
+        self.discount_var = tb.StringVar(value="")  # Empty by default for faster typing
+        discount_entry = tb.Entry(discount_row, textvariable=self.discount_var, width=8, font=("Segoe UI", 11))
         discount_entry.pack(side="right", padx=(10, 0))
-        discount_entry.bind("<KeyRelease>", lambda e: self.update_cart_view())
-        tb.Label(discount_frame, text="EGP", font=("Segoe UI", 11)).pack(side="right")
+        self.discount_var.trace("w", lambda *args: self.update_cart_view())
         
-        # Separator
+        # Add placeholder text
+        discount_entry.insert(0, "0")
+        discount_entry.config(foreground="#999999")
+        
+        def on_discount_focus_in(event):
+            if discount_entry.get() == "0" and discount_entry.cget("foreground") == "#999999":
+                discount_entry.delete(0, "end")
+                discount_entry.config(foreground="#000000")
+        
+        def on_discount_focus_out(event):
+            if not discount_entry.get():
+                discount_entry.insert(0, "0")
+                discount_entry.config(foreground="#999999")
+        
+        discount_entry.bind("<FocusIn>", on_discount_focus_in)
+        discount_entry.bind("<FocusOut>", on_discount_focus_out)
+        
+        # Total
         ttk.Separator(summary_frame, orient="horizontal").pack(fill="x", pady=10)
-        
-        # Grand Total
-        total_frame = tb.Frame(summary_frame)
-        total_frame.pack(fill="x", pady=6)
-        tb.Label(total_frame, text="TOTAL:", font=("Segoe UI", 20, "bold")).pack(side="left")
-        self.lbl_total = tb.Label(total_frame, text="EGP 0.00", font=("Segoe UI", 26, "bold"), bootstyle="success")
+        total_row = tb.Frame(summary_frame)
+        total_row.pack(fill="x", pady=5)
+        tb.Label(total_row, text="TOTAL:", font=("Segoe UI", 14, "bold")).pack(side="left")
+        self.lbl_total = tb.Label(total_row, text="EGP 0.00", font=("Segoe UI", 18, "bold"), bootstyle="success")
         self.lbl_total.pack(side="right")
         
-        # Action Buttons - Reorganized for better UX
-        btn_frame = tb.Frame(right_panel)
-        btn_frame.grid(row=6, column=0, columnspan=2, sticky="ew")
+        # Checkout button
+        self.checkout_btn = tb.Button(right_panel, text="✅ CHECKOUT", bootstyle="success", command=self.checkout)
+        self.checkout_btn.grid(row=6, column=0, sticky="ew", ipady=10)
         
-        # Top row - Cart management buttons
-        top_btn_row = tb.Frame(btn_frame)
-        top_btn_row.pack(fill="x", pady=(0, 8))
-        top_btn_row.columnconfigure(0, weight=1)
-        top_btn_row.columnconfigure(1, weight=1)
-        top_btn_row.columnconfigure(2, weight=1)
-        
-        tb.Button(top_btn_row, text="✏️ Edit Qty", bootstyle="info", command=self.edit_quantity).grid(row=0, column=0, sticky="ew", padx=(0, 5))
-        tb.Button(top_btn_row, text="🗑️ Remove", bootstyle="warning", command=self.remove_from_cart).grid(row=0, column=1, sticky="ew", padx=5)
-        tb.Button(top_btn_row, text="🧹 Clear Cart", bootstyle="danger", command=self.clear_cart).grid(row=0, column=2, sticky="ew", padx=(5, 0))
-        
-        # Bottom row - Primary checkout button
-        bottom_btn_row = tb.Frame(btn_frame)
-        bottom_btn_row.pack(fill="x")
-        
-        self.checkout_btn = tb.Button(bottom_btn_row, text="✅ CHECKOUT", bootstyle="success", command=self.checkout)
-        self.checkout_btn.pack(fill="x", ipady=8)  # Extra padding for prominence
-
-        # Load Data
+        # Load inventory
         self.all_inventory = []
         self.refresh_inventory()
 
@@ -245,126 +268,146 @@ class SalesFrame:
             self.filter_inventory()
         except Exception as e:
             messagebox.showerror("Error", str(e))
-    
-    def show_product_details(self, event=None):
-        """Display detailed information about selected product"""
-        sel = self.inv_tree.selection()
-        if not sel:
-            self.product_info.configure(text="Select a product to view details")
-            return
-        
-        values = self.inv_tree.item(sel[0])['values']
-        item_id = values[0]
-        
-        # Find full item data
-        for row in self.all_inventory:
-            if row[0] == item_id:
-                # row: id, sku, name, category, qty, buy_price, sell_price
-                sku = row[1]
-                name = row[2]
-                category = row[3]
-                stock = int(row[4])
-                sell_price = float(row[5])
-                
-                # Stock status
-                if stock == 0:
-                    stock_status = "❌ Out of Stock"
-                elif stock < 5:
-                    stock_status = f"⚠️ Very Low Stock ({stock} units)"
-                elif stock < 10:
-                    stock_status = f"⚡ Low Stock ({stock} units)"
-                else:
-                    stock_status = f"✅ In Stock ({stock} units)"
-                
-                info_text = f"SKU: {sku} | Category: {category} | Price: EGP {sell_price:.2f} | {stock_status}"
-                self.product_info.configure(text=info_text)
-                break
-    
-    def search_customer(self, event=None):
-        """Search for existing customer by phone number and auto-fill all fields"""
-        phone = self.cust_phone.get().strip()
-        if not phone or len(phone) < 3:
-            self.cust_info_label.configure(text="")
-            return
-        
-        try:
-            from modules.models import get_all_customers
-            customers = get_all_customers()
-            
-            # Search for matching phone
-            for cust in customers:
-                if phone in str(cust[1]):  # cust[1] is phone
-                    # Found customer - auto-fill all fields
-                    self.cust_name.delete(0, "end")
-                    self.cust_name.insert(0, cust[0])  # cust[0] is name
-                    
-                    # Note: Email and Address not in current database
-                    # Will be saved on next purchase
-                    
-                    order_count = cust[2] if len(cust) > 2 else 0
-                    last_visit = cust[3] if len(cust) > 3 else "N/A"
-                    
-                    self.cust_info_label.configure(
-                        text=f"✅ Existing Customer | {order_count} previous orders | Last visit: {last_visit}",
-                        foreground="#28a745"
-                    )
-                    return
-            
-            # No match found
-            self.cust_info_label.configure(text="🆕 New Customer - Please fill in details", foreground="#007bff")
-        except Exception as e:
-            print(f"Error searching customer: {e}")
 
     def filter_inventory(self, *args):
+        """Filter inventory and show AVAILABLE stock (accounting for items in cart)"""
         query = self.search_var.get().lower()
         category = self.category_filter.get()
         
         for item in self.inv_tree.get_children():
             self.inv_tree.delete(item)
         
-        idx = 0
         for row in self.all_inventory:
-            # row: id, sku, name, category, qty, sell_price (6 values)
+            # row: id, sku, name, category, qty, buy_price, sell_price
             if query and query not in str(row[1]).lower() and query not in str(row[2]).lower():
                 continue
             
             if category != "All" and str(row[3]) != category:
                 continue
             
-            # Determine stock tag
+            item_id = row[0]
             stock = int(row[4]) if row[4] else 0
-            if stock == 0:
-                stock_tag = "out_of_stock"
-            elif stock < 5:
-                stock_tag = "very_low"
-            elif stock < 10:
-                stock_tag = "low_stock"
+            sell_price = float(row[6])
+            
+            # Calculate available stock (subtract quantity in cart)
+            qty_in_cart = 0
+            for cart_item in self.cart:
+                if cart_item['id'] == item_id:
+                    qty_in_cart = cart_item['qty']
+                    break
+            
+            available_stock = stock - qty_in_cart
+            
+            # Determine stock display and tag based on AVAILABLE stock
+            if available_stock <= 0:
+                stock_display = f"❌ OUT ({qty_in_cart} in cart)"
+                tag = "out_of_stock"
+            elif available_stock < 5:
+                stock_display = f"⚠️ {available_stock}" + (f" ({qty_in_cart} in cart)" if qty_in_cart > 0 else "")
+                tag = "low_stock"
             else:
-                stock_tag = "in_stock"
+                stock_display = f"✓ {available_stock}" + (f" ({qty_in_cart} in cart)" if qty_in_cart > 0 else "")
+                tag = "in_stock"
             
-            # Alternating row tag
-            row_tag = 'odd_row' if idx % 2 == 0 else 'even_row'
-            
-            # Display: id, sku, name, category, stock, sell_price
-            self.inv_tree.insert("", "end", values=(row[0], row[1], row[2], row[3], stock, f"{row[5]:.2f}"), tags=(stock_tag, row_tag))
-            idx += 1
+            self.inv_tree.insert("", "end", values=(row[0], row[1], row[2], stock_display, f"EGP {sell_price:.2f}"), tags=(tag,))
 
+    def clear_customer_data(self):
+        """Clear customer fields except phone"""
+        self.cust_name.delete(0, "end")
+        self.cust_email.delete(0, "end")
+        self.cust_address.delete(0, "end")
+        self.cust_info_label.configure(text="")
+        self.clear_customer_btn.grid_forget()
+        self.cust_name.focus()
+    
+    def search_customer(self, event=None):
+        """Search for existing customer by phone number and auto-fill"""
+        phone = self.cust_phone.get().strip()
+        
+        if hasattr(self, '_last_found_phone') and self._last_found_phone and phone != self._last_found_phone:
+            self.cust_name.delete(0, "end")
+            self.cust_email.delete(0, "end")
+            self.cust_address.delete(0, "end")
+            self.cust_info_label.configure(text="")
+            self.clear_customer_btn.grid_forget()
+            self._last_found_phone = None
+        
+        if not phone or len(phone) < 3:
+            self.cust_info_label.configure(text="")
+            self.clear_customer_btn.grid_forget()
+            self._last_found_phone = None
+            return
+        
+        try:
+            from modules.models import search_customer_by_phone
+            customer = search_customer_by_phone(phone)
+            
+            if customer:
+                name = customer[1] or ""
+                email = customer[3] or ""
+                address = customer[4] or ""
+                total_spent = customer[8] or 0.0
+                
+                self.cust_name.delete(0, "end")
+                self.cust_name.insert(0, name)
+                
+                self.cust_email.delete(0, "end")
+                if email:
+                    self.cust_email.insert(0, email)
+                
+                self.cust_address.delete(0, "end")
+                if address:
+                    self.cust_address.insert(0, address)
+                
+                self._last_found_phone = phone
+                self.cust_info_label.configure(text=f"✅ Existing customer | Total spent: EGP {total_spent:,.0f}", foreground="#28a745")
+                self.clear_customer_btn.grid(row=0, column=1, sticky="e", padx=(10, 0))
+            else:
+                self.cust_info_label.configure(text="🆕 New customer", foreground="#007bff")
+                self.clear_customer_btn.grid_forget()
+                self._last_found_phone = None
+        except Exception as e:
+            print(f"Error searching customer: {e}")
+    
     def scan_barcode(self, event=None):
         """Add item to cart by barcode/SKU"""
         barcode = self.barcode_entry.get().strip()
         if not barcode:
             return
         
-        # Find item by SKU
+        barcode_clean = barcode.replace("-", "").replace(" ", "").lower()
+        
+        # Try exact match
         for row in self.all_inventory:
-            if str(row[1]).lower() == barcode.lower():  # Match SKU
-                # Add to cart
+            sku = str(row[1]).lower()
+            sku_clean = sku.replace("-", "").replace(" ", "")
+            name = str(row[2]).lower()
+            
+            if sku == barcode.lower() or sku_clean == barcode_clean or name == barcode.lower():
                 self.add_item_to_cart(row)
                 self.barcode_entry.delete(0, "end")
                 return
         
-        messagebox.showwarning("Not Found", f"No item found with SKU/Barcode: {barcode}")
-        self.barcode_entry.delete(0, "end")
+        # Try partial match
+        matches = []
+        for row in self.all_inventory:
+            sku = str(row[1]).lower()
+            sku_clean = sku.replace("-", "").replace(" ", "")
+            name = str(row[2]).lower()
+            
+            if barcode_clean in sku_clean or barcode.lower() in name:
+                matches.append(row)
+        
+        if len(matches) == 1:
+            self.add_item_to_cart(matches[0])
+            self.barcode_entry.delete(0, "end")
+        elif len(matches) > 1:
+            self.search_var.set(barcode)
+            self.barcode_entry.delete(0, "end")
+            messagebox.showinfo("Multiple Matches", f"Found {len(matches)} items. Check the product list.")
+        else:
+            messagebox.showwarning("Not Found", f"No item found: '{barcode}'")
+            self.barcode_entry.delete(0, "end")
 
     def add_to_cart(self):
         sel = self.inv_tree.selection()
@@ -382,104 +425,162 @@ class SalesFrame:
                 break
 
     def add_item_to_cart(self, row):
-        """Add item to cart with stock validation"""
-        # row: id, sku, name, category, qty, sell_price (6 values)
+        """Add item to cart - ENFORCE STOCK LIMITS"""
+        # row: id, sku, name, category, qty, buy_price, sell_price
         item_id = row[0]
         sku = row[1]
         name = row[2]
-        category = row[3]
+        category = row[3] if len(row) > 3 else "Unknown"
         stock = int(row[4])
-        sell_price = float(row[5])
+        buy_price = float(row[5])
+        sell_price = float(row[6])
         
+        # Check stock availability
         if stock <= 0:
-            messagebox.showwarning("Out of Stock", f"{name} is out of stock.")
+            messagebox.showwarning(
+                "❌ Out of Stock",
+                f"'{name}' is currently out of stock.\n\nCannot add to cart."
+            )
             return
         
         # Check if item already in cart
         for item in self.cart:
             if item['id'] == item_id:
-                if item['qty'] < stock:
-                    item['qty'] += 1
-                    self.update_cart_view()
+                # Check if we can add one more
+                if item['qty'] >= stock:
+                    messagebox.showwarning(
+                        "⚠️ Stock Limit Reached",
+                        f"Cannot add more '{name}'.\n\n"
+                        f"Available stock: {stock}\n"
+                        f"Already in cart: {item['qty']}"
+                    )
                     return
-                else:
-                    messagebox.showwarning("Stock Limit", f"Cannot add more. Only {stock} in stock.")
-                    return
+                item['qty'] += 1
+                self.update_cart_view()
+                self.refresh_inventory()  # Update product list to show reduced available stock
+                return
         
-        # Add new item to cart
+        # Add new item to cart with category
         self.cart.append({
             'id': item_id,
             'sku': sku,
             'name': name,
+            'category': category,
             'qty': 1,
             'price': sell_price,
-            'cost': 0.0,  # Cost not available in current query
+            'cost': buy_price,
             'max_qty': stock
         })
         self.update_cart_view()
+        self.refresh_inventory()  # Update product list to show reduced available stock
 
     def edit_quantity(self):
-        """Edit quantity of selected cart item"""
+        """Edit quantity of selected cart item - ENFORCE STOCK LIMITS"""
         sel = self.cart_tree.selection()
         if not sel:
-            messagebox.showwarning("Selection", "Please select an item from the cart.")
+            messagebox.showwarning("No Selection", "Please select an item from the cart.")
             return
         
-        idx = self.cart_tree.index(sel[0])
-        item = self.cart[idx]
-        
-        new_qty = simpledialog.askinteger("Edit Quantity", f"Enter quantity for {item['name']}:", 
-                                          initialvalue=item['qty'], minvalue=1, maxvalue=item['max_qty'])
-        if new_qty:
-            item['qty'] = new_qty
-            self.update_cart_view()
+        try:
+            idx = self.cart_tree.index(sel[0])
+            item = self.cart[idx]
+            
+            new_qty = simpledialog.askinteger(
+                "Edit Quantity", 
+                f"Enter new quantity for:\n{item['name']}\n\n"
+                f"Available stock: {item['max_qty']}", 
+                initialvalue=item['qty'], 
+                minvalue=1,
+                maxvalue=item['max_qty']
+            )
+            
+            if new_qty and new_qty != item['qty']:
+                item['qty'] = new_qty
+                self.update_cart_view()
+                self.refresh_inventory()  # Update product list
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not edit quantity: {e}")
 
     def remove_from_cart(self):
+        """Remove selected item from cart - UPDATE PRODUCT LIST"""
         sel = self.cart_tree.selection()
         if not sel:
+            messagebox.showwarning("No Selection", "Please select an item from the cart.")
             return
-        idx = self.cart_tree.index(sel[0])
-        del self.cart[idx]
-        self.update_cart_view()
+        
+        try:
+            idx = self.cart_tree.index(sel[0])
+            del self.cart[idx]
+            self.update_cart_view()
+            self.refresh_inventory()  # Update product list to show stock is available again
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not remove item: {e}")
 
     def clear_cart(self):
-        if self.cart and messagebox.askyesno("Clear Cart", "Remove all items from cart?"):
+        """Clear all items from cart - UPDATE PRODUCT LIST"""
+        if not self.cart:
+            messagebox.showinfo("Empty Cart", "Cart is already empty.")
+            return
+        
+        if messagebox.askyesno("Clear Cart", f"Remove all {len(self.cart)} items from cart?"):
             self.cart = []
             self.update_cart_view()
+            self.refresh_inventory()  # Update product list to show all stock available again
 
     def update_cart_view(self):
-        """Update cart display and calculate totals"""
+        """Update cart display and calculate totals - SHOW AVAILABLE STOCK"""
+        # Clear cart tree
         for item in self.cart_tree.get_children():
             self.cart_tree.delete(item)
-            
+        
+        print(f"DEBUG: Updating cart with {len(self.cart)} items")
+        
         subtotal = 0.0
         total_qty = 0
         total_cost = 0.0
         
-        for idx, i in enumerate(self.cart):
-            line_total = i['qty'] * i['price']
-            line_cost = i['qty'] * i['cost']
+        # Add items to cart tree with available stock info
+        for item in self.cart:
+            line_total = item['qty'] * item['price']
+            line_cost = item['qty'] * item['cost']
             subtotal += line_total
-            total_qty += i['qty']
+            total_qty += item['qty']
             total_cost += line_cost
             
-            row_tag = 'odd_cart' if idx % 2 == 0 else 'even_cart'
-            self.cart_tree.insert("", "end", values=(i['id'], i['sku'], i['name'], i['qty'], f"{i['price']:.2f}", f"{line_total:.2f}"), tags=(row_tag,))
+            # Calculate remaining available stock (max_qty - qty in cart)
+            available_stock = item['max_qty'] - item['qty']
+            stock_display = f"{available_stock} left"
+            
+            values = (
+                item['sku'], 
+                item['name'], 
+                item['qty'], 
+                stock_display,
+                f"EGP {item['price']:.2f}", 
+                f"EGP {line_total:.2f}"
+            )
+            print(f"DEBUG: Inserting cart item: {values}")
+            self.cart_tree.insert("", "end", values=values)
         
-        # Calculate discount
+        print(f"DEBUG: Cart tree now has {len(self.cart_tree.get_children())} rows")
+        
+        # Calculate discount - handle empty or placeholder
         try:
-            discount = float(self.discount_var.get() or 0)
+            discount_str = self.discount_var.get().strip()
+            # Treat empty or "0" placeholder as 0%
+            if not discount_str or discount_str == "0":
+                discount_pct = 0.0
+            else:
+                discount_pct = float(discount_str)
+                discount_pct = max(0, min(100, discount_pct))
         except:
-            discount = 0.0
-            self.discount_var.set("0")
+            discount_pct = 0.0
         
-        # Calculate total (no tax)
-        grand_total = subtotal - discount
-        
-        # Calculate estimated profit
+        discount_amount = (subtotal * discount_pct) / 100
+        grand_total = subtotal - discount_amount
         profit = grand_total - total_cost
         
-        # Update sale info cards
+        # Update info cards
         self.lbl_items_count.configure(text=str(len(self.cart)))
         self.lbl_total_qty.configure(text=str(total_qty))
         self.lbl_profit.configure(text=f"EGP {profit:.0f}")
@@ -488,85 +589,98 @@ class SalesFrame:
         self.lbl_subtotal.configure(text=f"EGP {subtotal:,.2f}")
         self.lbl_total.configure(text=f"EGP {grand_total:,.2f}")
         
-        # Enable/disable checkout button based on cart contents
+        # Enable/disable checkout
         if self.cart:
             self.checkout_btn.configure(state="normal")
         else:
             self.checkout_btn.configure(state="disabled")
+        
+        # Force update
+        self.cart_tree.update_idletasks()
 
     def checkout(self):
         if not self.cart:
             messagebox.showwarning("Empty Cart", "Add items to cart first.")
             return
         
-        # Get customer information
         cust_name = self.cust_name.get().strip()
         cust_phone = self.cust_phone.get().strip()
-        cust_email = self.cust_email.get().strip()
-        cust_address = self.cust_address.get().strip()
+        cust_email = self.cust_email.get().strip() or None
+        cust_address = self.cust_address.get().strip() or None
         
-        # Validate at least name or phone
-        if not cust_name and not cust_phone:
-            if not messagebox.askyesno("No Customer Info", "No customer information provided.\n\nProceed with anonymous sale?"):
-                return
-            cust_name = "Walk-in Customer"
+        if not cust_name:
+            messagebox.showwarning("Customer Name Required", "Please enter customer name.")
+            self.cust_name.focus()
+            return
         
-        # Prepare items for DB: (item_id, qty, unit_price, cost_price)
-        db_items = [(i['id'], i['qty'], i['price'], i['cost']) for i in self.cart]
+        # Calculate discount
+        try:
+            discount_str = self.discount_var.get().strip()
+            discount_pct = float(discount_str) if discount_str and discount_str != "0" else 0.0
+        except:
+            discount_pct = 0.0
+        
+        # Prepare items with full details for comprehensive tracking
+        items_detailed = self.cart  # Already has all details: id, sku, name, category, qty, price, cost
         
         try:
-            # Pass all customer data to controller
             sale_id = POSController.create_sale(
                 customer_name=cust_name,
-                items=db_items,
-                customer_phone=cust_phone,
+                items=items_detailed,
+                customer_phone=cust_phone or None,
                 customer_email=cust_email,
-                customer_address=cust_address
+                customer_address=cust_address,
+                seller_name="Cashier",  # TODO: Get from logged-in user
+                discount_percent=discount_pct,
+                payment_method="Cash",  # TODO: Add payment method selector
+                notes=None
             )
+            
             if sale_id:
-                messagebox.showinfo("Success", f"✅ Sale #{sale_id} completed successfully!")
+                messagebox.showinfo("Success", f"✅ Sale #{sale_id} completed!")
                 
-                # Generate Receipt
+                # Generate receipt
                 try:
                     from modules.reports.receipt_generator import generate_sales_receipt_pdf
                     
-                    # Calculate totals (no tax)
                     subtotal = sum([i['qty']*i['price'] for i in self.cart])
                     try:
-                        discount = float(self.discount_var.get() or 0)
+                        discount_str = self.discount_var.get().strip()
+                        discount_pct = float(discount_str) if discount_str and discount_str != "0" else 0.0
                     except:
-                        discount = 0.0
+                        discount_pct = 0.0
                     
-                    grand_total = subtotal - discount
+                    discount_amount = (subtotal * discount_pct) / 100
+                    grand_total = subtotal - discount_amount
                     
-                    # Items for receipt: (name, qty, price, total)
                     receipt_items = [(i['name'], i['qty'], i['price'], i['qty']*i['price']) for i in self.cart]
-                    
-                    # Sale tuple: (sale_id, date, cust_name, subtotal, discount, total)
-                    sale_data = (sale_id, datetime.now().isoformat()[:16], cust_name, subtotal, discount, grand_total)
+                    sale_data = (sale_id, datetime.now().isoformat()[:16], cust_name, subtotal, discount_amount, grand_total)
                     
                     pdf_path = generate_sales_receipt_pdf(sale_data, receipt_items)
                     
-                    # Auto-open
                     try:
                         os.startfile(pdf_path)
                     except:
                         messagebox.showinfo("Receipt", f"Receipt saved to:\n{pdf_path}")
-                        
                 except Exception as e:
                     messagebox.showerror("Receipt Error", f"Could not generate receipt: {e}")
-
-                # Reset all fields
+                
+                # Reset
                 self.cart = []
-                self.discount_var.set("0")
+                self.discount_var.set("")  # Empty for next sale
                 self.cust_name.delete(0, "end")
                 self.cust_phone.delete(0, "end")
                 self.cust_email.delete(0, "end")
                 self.cust_address.delete(0, "end")
                 self.cust_info_label.configure(text="")
-                self.product_info.configure(text="Select a product to view details")
+                self.clear_customer_btn.grid_forget()
+                self._last_found_phone = None
                 self.update_cart_view()
                 self.refresh_inventory()
+                
+                # Notify ALL views that sale completed
+                from modules.event_manager import event_manager
+                event_manager.notify('sale_completed', {'sale_id': sale_id, 'customer': cust_name, 'total': grand_total})
             else:
                 messagebox.showerror("Failed", "Could not record sale.")
         except Exception as e:
