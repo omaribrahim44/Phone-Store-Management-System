@@ -134,12 +134,6 @@ class SalesFrame:
         # Track last found phone
         self._last_found_phone = None
         
-        # Barcode/SKU entry - Add as row 3 in customer frame
-        tb.Label(cust_frame, text="Barcode/SKU:", font=("Segoe UI", 10)).grid(row=3, column=0, sticky="w", padx=(0, 10), pady=5)
-        self.barcode_entry = tb.Entry(cust_frame, font=("Segoe UI", 11))
-        self.barcode_entry.grid(row=3, column=1, columnspan=3, sticky="ew", pady=5)
-        self.barcode_entry.bind("<Return>", self.scan_barcode)
-        
         # Sale info cards - SMALLER AND COMPACT
         info_frame = tb.Frame(right_panel)
         info_frame.grid(row=2, column=0, sticky="ew", pady=(0, 5))
@@ -165,14 +159,14 @@ class SalesFrame:
         self.lbl_profit = tb.Label(profit_card, text="EGP 0", font=("Segoe UI", 12, "bold"), bootstyle="secondary-inverse")
         self.lbl_profit.pack()
         
-        # Cart table - MAXIMUM SIZE for better visualization
-        cart_frame = tb.Labelframe(right_panel, text="🛒 Cart Items", padding=10, bootstyle="primary")
-        cart_frame.grid(row=3, column=0, sticky="nsew", pady=(0, 8))
+        # Cart table - LARGER AND MORE COMFORTABLE
+        cart_frame = tb.Labelframe(right_panel, text="🛒 Cart Items", padding=12, bootstyle="primary")
+        cart_frame.grid(row=3, column=0, sticky="nsew", pady=(0, 10))
         cart_frame.columnconfigure(0, weight=1)
         cart_frame.rowconfigure(0, weight=1)
         
         c_cols = ("sku", "name", "qty", "stock", "price", "total")
-        self.cart_tree = ttk.Treeview(cart_frame, columns=c_cols, show="headings", height=22)  # MAXIMUM HEIGHT
+        self.cart_tree = ttk.Treeview(cart_frame, columns=c_cols, show="headings", height=24)  # LARGER HEIGHT
         self.cart_tree.heading("sku", text="SKU", anchor="w")
         self.cart_tree.heading("name", text="Product Name", anchor="w")
         self.cart_tree.heading("qty", text="Qty", anchor="center")
@@ -180,17 +174,17 @@ class SalesFrame:
         self.cart_tree.heading("price", text="Unit Price", anchor="e")
         self.cart_tree.heading("total", text="Line Total", anchor="e")
         
-        self.cart_tree.column("sku", width=120, anchor="w")
-        self.cart_tree.column("name", width=250, anchor="w")
-        self.cart_tree.column("qty", width=70, anchor="center")
-        self.cart_tree.column("stock", width=90, anchor="center")
-        self.cart_tree.column("price", width=100, anchor="e")
-        self.cart_tree.column("total", width=120, anchor="e")
+        self.cart_tree.column("sku", width=130, anchor="w")
+        self.cart_tree.column("name", width=280, anchor="w")
+        self.cart_tree.column("qty", width=80, anchor="center")
+        self.cart_tree.column("stock", width=100, anchor="center")
+        self.cart_tree.column("price", width=110, anchor="e")
+        self.cart_tree.column("total", width=130, anchor="e")
         
-        # Style for cart tree
+        # Enhanced style for cart tree - MORE COMFORTABLE
         style = ttk.Style()
-        style.configure("Treeview", rowheight=30, font=("Segoe UI", 11))
-        style.configure("Treeview.Heading", font=("Segoe UI", 11, "bold"))
+        style.configure("Treeview", rowheight=35, font=("Segoe UI", 12))
+        style.configure("Treeview.Heading", font=("Segoe UI", 12, "bold"), padding=8)
         
         self.cart_tree.grid(row=0, column=0, sticky="nsew")
         
@@ -228,23 +222,6 @@ class SalesFrame:
         discount_entry = tb.Entry(discount_row, textvariable=self.discount_var, width=8, font=("Segoe UI", 11))
         discount_entry.pack(side="right", padx=(10, 0))
         self.discount_var.trace("w", lambda *args: self.update_cart_view())
-        
-        # Add placeholder text
-        discount_entry.insert(0, "0")
-        discount_entry.config(foreground="#999999")
-        
-        def on_discount_focus_in(event):
-            if discount_entry.get() == "0" and discount_entry.cget("foreground") == "#999999":
-                discount_entry.delete(0, "end")
-                discount_entry.config(foreground="#000000")
-        
-        def on_discount_focus_out(event):
-            if not discount_entry.get():
-                discount_entry.insert(0, "0")
-                discount_entry.config(foreground="#999999")
-        
-        discount_entry.bind("<FocusIn>", on_discount_focus_in)
-        discount_entry.bind("<FocusOut>", on_discount_focus_out)
         
         # Total
         ttk.Separator(summary_frame, orient="horizontal").pack(fill="x", pady=10)
@@ -321,21 +298,24 @@ class SalesFrame:
         self.cust_name.focus()
     
     def search_customer(self, event=None):
-        """Search for existing customer by phone number and auto-fill"""
+        """Search for existing customer by phone number and auto-fill - ENHANCED AUTO-COMPLETE"""
         phone = self.cust_phone.get().strip()
         
+        # Clear fields if phone changed from last found customer
         if hasattr(self, '_last_found_phone') and self._last_found_phone and phone != self._last_found_phone:
-            self.cust_name.delete(0, "end")
-            self.cust_email.delete(0, "end")
-            self.cust_address.delete(0, "end")
-            self.cust_info_label.configure(text="")
-            self.clear_customer_btn.grid_forget()
-            self._last_found_phone = None
+            # Only clear if user is typing a different number
+            if not phone.startswith(self._last_found_phone[:len(phone)]):
+                self.cust_name.delete(0, "end")
+                self.cust_email.delete(0, "end")
+                self.cust_address.delete(0, "end")
+                self.cust_info_label.configure(text="")
+                self.clear_customer_btn.grid_forget()
+                self._last_found_phone = None
         
         if not phone or len(phone) < 3:
-            self.cust_info_label.configure(text="")
-            self.clear_customer_btn.grid_forget()
-            self._last_found_phone = None
+            if not hasattr(self, '_last_found_phone') or not self._last_found_phone:
+                self.cust_info_label.configure(text="")
+                self.clear_customer_btn.grid_forget()
             return
         
         try:
@@ -343,11 +323,24 @@ class SalesFrame:
             customer = search_customer_by_phone(phone)
             
             if customer:
+                full_phone = customer[2] or ""
                 name = customer[1] or ""
                 email = customer[3] or ""
                 address = customer[4] or ""
                 total_spent = customer[8] or 0.0
                 
+                # Auto-complete phone number if partial match
+                if full_phone and phone != full_phone and full_phone.startswith(phone):
+                    # Save cursor position
+                    cursor_pos = len(phone)
+                    # Complete the phone number
+                    self.cust_phone.delete(0, "end")
+                    self.cust_phone.insert(0, full_phone)
+                    # Select the auto-completed part
+                    self.cust_phone.select_range(cursor_pos, "end")
+                    self.cust_phone.icursor(cursor_pos)
+                
+                # Auto-fill other fields
                 self.cust_name.delete(0, "end")
                 self.cust_name.insert(0, name)
                 
@@ -359,55 +352,19 @@ class SalesFrame:
                 if address:
                     self.cust_address.insert(0, address)
                 
-                self._last_found_phone = phone
+                self._last_found_phone = full_phone
                 self.cust_info_label.configure(text=f"✅ Existing customer | Total spent: EGP {total_spent:,.0f}", foreground="#28a745")
                 self.clear_customer_btn.grid(row=0, column=1, sticky="e", padx=(10, 0))
             else:
-                self.cust_info_label.configure(text="🆕 New customer", foreground="#007bff")
-                self.clear_customer_btn.grid_forget()
-                self._last_found_phone = None
+                # Only clear if we had a previous match
+                if hasattr(self, '_last_found_phone') and self._last_found_phone:
+                    self.cust_info_label.configure(text="🆕 New customer", foreground="#007bff")
+                    self.clear_customer_btn.grid_forget()
+                    self._last_found_phone = None
         except Exception as e:
             print(f"Error searching customer: {e}")
     
-    def scan_barcode(self, event=None):
-        """Add item to cart by barcode/SKU"""
-        barcode = self.barcode_entry.get().strip()
-        if not barcode:
-            return
-        
-        barcode_clean = barcode.replace("-", "").replace(" ", "").lower()
-        
-        # Try exact match
-        for row in self.all_inventory:
-            sku = str(row[1]).lower()
-            sku_clean = sku.replace("-", "").replace(" ", "")
-            name = str(row[2]).lower()
-            
-            if sku == barcode.lower() or sku_clean == barcode_clean or name == barcode.lower():
-                self.add_item_to_cart(row)
-                self.barcode_entry.delete(0, "end")
-                return
-        
-        # Try partial match
-        matches = []
-        for row in self.all_inventory:
-            sku = str(row[1]).lower()
-            sku_clean = sku.replace("-", "").replace(" ", "")
-            name = str(row[2]).lower()
-            
-            if barcode_clean in sku_clean or barcode.lower() in name:
-                matches.append(row)
-        
-        if len(matches) == 1:
-            self.add_item_to_cart(matches[0])
-            self.barcode_entry.delete(0, "end")
-        elif len(matches) > 1:
-            self.search_var.set(barcode)
-            self.barcode_entry.delete(0, "end")
-            messagebox.showinfo("Multiple Matches", f"Found {len(matches)} items. Check the product list.")
-        else:
-            messagebox.showwarning("Not Found", f"No item found: '{barcode}'")
-            self.barcode_entry.delete(0, "end")
+
 
     def add_to_cart(self):
         sel = self.inv_tree.selection()
