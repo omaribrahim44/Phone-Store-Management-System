@@ -139,11 +139,11 @@ def get_inventory():
     Get all inventory items.
     
     Returns:
-        List of tuples: (item_id, sku, name, category, quantity, sell_price)
+        List of tuples: (item_id, sku, name, category, quantity, buy_price, sell_price)
     """
     conn = get_conn()
     c = conn.cursor()
-    c.execute("SELECT item_id, sku, name, category, quantity, sell_price FROM inventory")
+    c.execute("SELECT item_id, sku, name, category, quantity, buy_price, sell_price FROM inventory")
     rows = c.fetchall()
     conn.close()
     return rows

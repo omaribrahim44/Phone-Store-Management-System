@@ -233,7 +233,7 @@ class InventoryFrame:
         total_inventory_value = 0.0
         
         for idx, row in enumerate(self.all_items):
-            # row: id, sku, name, category, qty, buy, sell
+            # row: id, sku, name, category, qty, buy_price, sell_price
             # Filter by text
             if query:
                 combined = " ".join([str(x) for x in row]).lower()
@@ -250,16 +250,29 @@ class InventoryFrame:
             if low_stock and qty >= 5:
                 continue
             
-            # Calculate total value (qty * buy price)
+            # Get prices
             try:
                 buy_price = float(row[5])  # buy price at index 5
-                total_value = qty * buy_price
-                total_inventory_value += total_value
+                sell_price = float(row[6])  # sell price at index 6
             except:
-                total_value = 0.0
+                buy_price = 0.0
+                sell_price = 0.0
             
-            # Add total value to row
-            display_row = list(row) + [f"EGP {total_value:,.2f}"]
+            # Calculate total value (qty * buy price)
+            total_value = qty * buy_price
+            total_inventory_value += total_value
+            
+            # Format display row with formatted prices
+            display_row = [
+                row[0],  # id
+                row[1],  # sku
+                row[2],  # name
+                row[3],  # category
+                row[4],  # qty
+                f"EGP {buy_price:,.2f}",  # buy price (unit price, not total)
+                f"EGP {sell_price:,.2f}",  # sell price (unit price, not total)
+                f"EGP {total_value:,.2f}"  # total value (qty * buy_price)
+            ]
             
             # Determine row styling
             tags = []
