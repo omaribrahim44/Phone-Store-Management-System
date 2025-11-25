@@ -2,6 +2,7 @@
 ttkbootstrap>=1.10.1
 reportlab>=4.0.0
 qrcode>=7.4.2
+Pillow>=10.0.0
 
 # Testing dependencies
 hypothesis>=6.90.0
@@ -11,3 +12,6 @@ faker>=20.0.0
 
 # Security
 bcrypt>=4.1.0
+
+# Note: Python 3.10+ required
+# Standard library modules used: sqlite3, json, os, datetime, hashlib, pathlib

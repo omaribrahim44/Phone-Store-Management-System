@@ -69,46 +69,178 @@ A comprehensive desktop application for managing mobile phone shop operations in
 - Backup and restore functionality
 - System health checks
 
-## 🚀 Installation
+## 🚀 Quick Start Guide
 
 ### Prerequisites
-- **Python 3.10+** installed
-- **pip** package manager
 
-### Setup Steps
+Before you begin, ensure you have the following installed:
+- **Python 3.10 or higher** - [Download Python](https://www.python.org/downloads/)
+- **pip** (comes with Python)
+- **Git** (optional, for cloning) - [Download Git](https://git-scm.com/downloads)
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/omaribrahim44/Phone-Store-Management-System.git
-   cd Phone-Store-Management-System
-   ```
+### Installation Steps
 
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+#### Option 1: Using Git (Recommended)
 
-3. **Initialize the database**
-   ```bash
-   python db_init.py
-   ```
+```bash
+# 1. Clone the repository
+git clone https://github.com/omaribrahim44/Phone-Store-Management-System.git
 
-4. **Run the application**
-   ```bash
-   python app.py
-   ```
+# 2. Navigate to project directory
+cd Phone-Store-Management-System
 
-## 📋 Requirements
+# 3. Create a virtual environment (recommended)
+python -m venv venv
 
-Key dependencies include:
-- `ttkbootstrap` - Modern UI components
-- `reportlab` - PDF generation
-- `qrcode` - QR code generation
-- `matplotlib` - Data visualization
-- `hypothesis` - Property-based testing
-- `pytest` - Testing framework
+# 4. Activate virtual environment
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
 
-See `requirements.txt` for complete list.
+# 5. Install dependencies
+pip install -r requirements.txt
+
+# 6. Initialize the database
+python db_init.py
+
+# 7. Run the application
+python app.py
+```
+
+#### Option 2: Download ZIP
+
+```bash
+# 1. Download ZIP from GitHub
+# Click "Code" → "Download ZIP" on the repository page
+# Extract the ZIP file to your desired location
+
+# 2. Open terminal/command prompt in the extracted folder
+
+# 3. Create a virtual environment (recommended)
+python -m venv venv
+
+# 4. Activate virtual environment
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+
+# 5. Install dependencies
+pip install -r requirements.txt
+
+# 6. Initialize the database
+python db_init.py
+
+# 7. Run the application
+python app.py
+```
+
+### First Time Setup
+
+After running the application for the first time:
+
+1. **Default Admin Credentials**
+   - Username: `admin`
+   - Password: `admin123`
+   - ⚠️ **Change this immediately** via Settings → Users
+
+2. **Configure Shop Details**
+   - Go to Settings tab
+   - Update shop name, address, and phone number
+   - Choose your preferred theme
+
+3. **Add Initial Inventory**
+   - Navigate to Inventory tab
+   - Click "Add Item" to add your first products
+
+### Troubleshooting
+
+#### Python Version Issues
+```bash
+# Check Python version
+python --version
+
+# If version is below 3.10, download latest from python.org
+```
+
+#### Module Not Found Errors
+```bash
+# Ensure virtual environment is activated
+# Then reinstall dependencies
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+#### Database Errors
+```bash
+# Reinitialize the database
+python db_init.py
+```
+
+#### Permission Errors (Windows)
+```bash
+# Run as administrator or use:
+python -m pip install -r requirements.txt
+```
+
+#### Permission Errors (macOS/Linux)
+```bash
+# Use pip with --user flag
+pip install --user -r requirements.txt
+```
+
+## 📋 System Requirements
+
+### Minimum Requirements
+- **OS**: Windows 10/11, macOS 10.14+, or Linux (Ubuntu 20.04+)
+- **Python**: 3.10 or higher
+- **RAM**: 4GB minimum (8GB recommended)
+- **Storage**: 500MB free space
+- **Display**: 1280x720 minimum resolution
+
+### Python Dependencies
+
+#### Core Dependencies
+- `ttkbootstrap>=1.10.1` - Modern UI components and themes
+- `reportlab>=4.0.0` - Professional PDF receipt generation
+- `qrcode>=7.4.2` - QR code generation for receipts
+- `Pillow>=10.0.0` - Image processing for QR codes
+- `bcrypt>=4.1.0` - Secure password hashing
+
+#### Testing Dependencies (Optional)
+- `hypothesis>=6.90.0` - Property-based testing framework
+- `pytest>=7.4.0` - Testing framework
+- `pytest-cov>=4.1.0` - Code coverage reports
+- `faker>=20.0.0` - Test data generation
+
+#### Standard Library (Included with Python)
+- `sqlite3` - Database management
+- `tkinter` - GUI framework (comes with Python)
+- `json` - Configuration management
+- `datetime` - Date/time handling
+- `hashlib` - Password hashing
+- `pathlib` - File path operations
+
+### Installing Dependencies
+
+```bash
+# Install all dependencies (including testing)
+pip install -r requirements.txt
+
+# Install only core dependencies (without testing tools)
+pip install ttkbootstrap reportlab qrcode Pillow bcrypt
+```
+
+### Verifying Installation
+
+```bash
+# Check if all dependencies are installed
+pip list
+
+# Run a quick test
+python -c "import ttkbootstrap, reportlab, qrcode; print('All core dependencies installed!')"
+```
 
 ## 🎨 User Interface
 
@@ -182,9 +314,15 @@ Edit `shop_config.json` to customize:
 
 ## 📖 Documentation
 
+- **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - 📖 **Complete setup instructions** (START HERE!)
 - **[ENHANCEMENTS_COMPLETE.md](ENHANCEMENTS_COMPLETE.md)** - Complete feature documentation
 - **[CLEANUP_SUMMARY.md](CLEANUP_SUMMARY.md)** - Project cleanup details
 - **[tests/README.md](tests/README.md)** - Testing documentation
+
+### 🆘 Need Help?
+- **New to the project?** Read [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed instructions
+- **Having issues?** Check the [Troubleshooting](#troubleshooting) section
+- **Want to contribute?** See [Contributing](#contributing) guidelines
 
 ## 🤝 Contributing
 
