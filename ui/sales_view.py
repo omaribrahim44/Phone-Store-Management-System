@@ -750,6 +750,12 @@ class SalesFrame:
         def print_receipt():
             """Generate and print receipt"""
             try:
+                # Force reload the module to avoid cache issues
+                import importlib
+                import sys
+                if 'modules.reports.receipt_generator' in sys.modules:
+                    importlib.reload(sys.modules['modules.reports.receipt_generator'])
+                
                 from modules.reports.receipt_generator import generate_sales_receipt_pdf
                 pdf_path = generate_sales_receipt_pdf(sale_data, receipt_items)
                 
@@ -759,7 +765,9 @@ class SalesFrame:
                 except:
                     messagebox.showinfo("Receipt Saved", f"✓ Receipt saved!\n\nLocation:\n{pdf_path}")
             except Exception as e:
-                messagebox.showerror("Receipt Error", f"Could not generate receipt:\n{str(e)}")
+                import traceback
+                error_details = traceback.format_exc()
+                messagebox.showerror("Receipt Error", f"Could not generate receipt:\n\n{str(e)}\n\nDetails:\n{error_details[:200]}")
         
         def close_dialog():
             dialog.destroy()
