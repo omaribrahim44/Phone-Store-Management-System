@@ -37,7 +37,8 @@ if __name__ == "__main__":
         log.error(f"Auto-backup failed: {e}")
 
     # Load theme from configuration
-    theme = config.get_theme()
+    cfg = config.load_config()
+    theme = cfg.get("theme", "cosmo")
     log.info(f"Loaded configuration. Theme: {theme}")
 
     # Start the UI application
