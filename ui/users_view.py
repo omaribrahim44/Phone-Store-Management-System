@@ -104,9 +104,10 @@ class UsersFrame:
             font=("Segoe UI", 10, "bold")
         ).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=8)
         
+        from modules.constants import USER_ROLES
         self.u_role = tb.Combobox(
             form_frame, 
-            values=["Admin", "Cashier", "Technician"], 
+            values=USER_ROLES, 
             state="readonly",
             font=("Segoe UI", 10),
             width=23
@@ -187,9 +188,10 @@ class UsersFrame:
             font=("Segoe UI", 10, "bold")
         ).grid(row=0, column=2, padx=(20, 10))
         
+        from modules.constants import USER_ROLES
         self.filter_role = tb.Combobox(
             search_frame,
-            values=["All", "Admin", "Cashier", "Technician"],
+            values=["All"] + USER_ROLES,
             state="readonly",
             width=15,
             font=("Segoe UI", 10)

@@ -605,18 +605,9 @@ class InventoryFrame:
         e_name = create_field(form_container, "Item Name", is_required=True)
         add_placeholder(e_name, "e.g., iPhone 14 Pro Max")
         
-        # Category with better options
-        categories = [
-            "Mobile Phones",
-            "Phone Cases & Covers", 
-            "Chargers & Cables",
-            "AirPods & Earphones",
-            "Screen Protectors",
-            "Phone Accessories",
-            "Repair Parts",
-            "Other"
-        ]
-        e_category = create_field(form_container, "Category", is_required=True, field_type="combobox", options=categories)
+        # Category with better options - Import from constants
+        from modules.constants import PRODUCT_CATEGORIES
+        e_category = create_field(form_container, "Category", is_required=True, field_type="combobox", options=PRODUCT_CATEGORIES)
         
         # Quantity and prices in a grid
         grid_frame = tb.Frame(form_container)

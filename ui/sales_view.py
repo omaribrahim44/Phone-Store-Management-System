@@ -44,8 +44,11 @@ class SalesFrame:
         filter_frame = tb.Frame(left_panel)
         filter_frame.grid(row=2, column=0, sticky="ew", pady=(0, 10))
         
+        # Import categories from constants for consistency
+        from modules.constants import PRODUCT_CATEGORIES
+        
         tb.Label(filter_frame, text="Category:", font=("Segoe UI", 10)).pack(side="left", padx=(0, 10))
-        self.category_filter = tb.Combobox(filter_frame, values=["All", "Mobile Phones", "Phone Cases & Covers", "Chargers & Cables", "AirPods & Earphones", "Screen Protectors", "Phone Accessories", "Repair Parts", "Other"], state="readonly", width=20, font=("Segoe UI", 10))
+        self.category_filter = tb.Combobox(filter_frame, values=["All"] + PRODUCT_CATEGORIES, state="readonly", width=20, font=("Segoe UI", 10))
         self.category_filter.set("All")
         self.category_filter.pack(side="left")
         self.category_filter.bind("<<ComboboxSelected>>", self.filter_inventory)
@@ -243,11 +246,11 @@ class SalesFrame:
         payment_row.pack(fill="x", pady=5)
         tb.Label(payment_row, text="Payment:", font=("Segoe UI", 11)).pack(side="left")
         self.payment_method_var = tb.StringVar(value="Cash")
-        payment_methods = ["Cash", "Card", "Bank Transfer", "Mobile Payment"]
+        from modules.constants import PAYMENT_METHODS
         payment_combo = tb.Combobox(
             payment_row,
             textvariable=self.payment_method_var,
-            values=payment_methods,
+            values=PAYMENT_METHODS,
             state="readonly",
             width=15,
             font=("Segoe UI", 10)
