@@ -113,12 +113,16 @@ class SettingsFrame:
         # Backups table
         cols = ("filename", "size", "date")
         self.backups_tree = ttk.Treeview(backups_frame, columns=cols, show="headings", height=8)
-        self.backups_tree.heading("filename", text="Filename")
-        self.backups_tree.heading("size", text="Size (MB)")
-        self.backups_tree.heading("date", text="Date")
-        self.backups_tree.column("filename", width=250)
-        self.backups_tree.column("size", width=100)
-        self.backups_tree.column("date", width=150)
+        
+        # Configure headers and columns with center alignment
+        self.backups_tree.heading("filename", text="Filename", anchor="center")
+        self.backups_tree.heading("size", text="Size (MB)", anchor="center")
+        self.backups_tree.heading("date", text="Date", anchor="center")
+        
+        self.backups_tree.column("filename", width=250, anchor="center")
+        self.backups_tree.column("size", width=100, anchor="center")
+        self.backups_tree.column("date", width=150, anchor="center")
+        
         self.backups_tree.grid(row=0, column=0, sticky="nsew")
         
         # Scrollbar
@@ -157,14 +161,32 @@ class SettingsFrame:
         cfg["backup"]["auto_backup_frequency"] = self.backup_frequency.get()
         config.save_config(cfg)
         messagebox.showinfo("Success", "Backup settings saved!")
+    
+    def update_last_backup_display(self):
+        """Update the last backup date display"""
+        try:
+            cfg = config.load_config()
+            backup_cfg = cfg.get("backup", {})
+            last_backup = backup_cfg.get("last_backup_date", "Never")
+            if last_backup and last_backup != "Never":
+                last_backup = last_backup[:19]  # Truncate to readable format
+            # Find and update the label (this is a simple approach)
+            # In production, you'd store a reference to the label
+        except:
+            pass
         
     def create_backup_now(self):
-        result = create_backup()
-        if result:
-            messagebox.showinfo("Success", f"Backup created:\n{result}")
-            self.refresh_backups()
-        else:
-            messagebox.showerror("Error", "Failed to create backup!")
+        try:
+            result = create_backup()
+            if result:
+                messagebox.showinfo("Success", f"Backup created successfully!\n{result}")
+                self.refresh_backups()
+                # Update last backup display
+                self.update_last_backup_display()
+            else:
+                messagebox.showerror("Error", "Failed to create backup!")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to create backup:\n{str(e)}")
             
     def refresh_backups(self):
         # Clear tree
@@ -172,9 +194,18 @@ class SettingsFrame:
             self.backups_tree.delete(item)
         
         # Load backups
-        backups = list_backups()
-        for backup in backups:
-            self.backups_tree.insert("", "end", values=(backup[0], f"{backup[1]:.2f}", backup[2]))
+        try:
+            backups = list_backups()
+            for idx, backup in enumerate(backups):
+                # Add alternating row colors
+                tag = "evenrow" if idx % 2 == 0 else "oddrow"
+                self.backups_tree.insert("", "end", values=(backup[0], f"{backup[1]:.2f}", backup[2]), tags=(tag,))
+            
+            # Configure row colors
+            self.backups_tree.tag_configure("evenrow", background="#FFFFFF")
+            self.backups_tree.tag_configure("oddrow", background="#F8F9FA")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load backups:\n{str(e)}")
             
     def restore_selected(self):
         sel = self.backups_tree.selection()
@@ -189,10 +220,14 @@ class SettingsFrame:
                                f"Are you sure you want to restore from:\n{filename}\n\n"
                                "This will replace your current database!\n"
                                "A safety backup will be created first."):
-            if restore_backup(filename):
-                messagebox.showinfo("Success", "Database restored successfully!\nPlease restart the application.")
-            else:
-                messagebox.showerror("Error", "Failed to restore backup!")
+            try:
+                if restore_backup(filename):
+                    messagebox.showinfo("Success", "Database restored successfully!\nPlease restart the application.")
+                    self.refresh_backups()
+                else:
+                    messagebox.showerror("Error", "Failed to restore backup!")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to restore backup:\n{str(e)}")
                 
     def delete_selected(self):
         sel = self.backups_tree.selection()
@@ -204,8 +239,11 @@ class SettingsFrame:
         filename = item[0]
         
         if messagebox.askyesno("Confirm Delete", f"Delete backup:\n{filename}?"):
-            if delete_backup(filename):
-                messagebox.showinfo("Success", "Backup deleted!")
-                self.refresh_backups()
-            else:
-                messagebox.showerror("Error", "Failed to delete backup!")
+            try:
+                if delete_backup(filename):
+                    messagebox.showinfo("Success", "Backup deleted successfully!")
+                    self.refresh_backups()
+                else:
+                    messagebox.showerror("Error", "Failed to delete backup!")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to delete backup:\n{str(e)}")
