@@ -94,83 +94,76 @@ class SalesFrame:
         right_panel = tb.Frame(self.frame)
         right_panel.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
         right_panel.columnconfigure(0, weight=1)
-        right_panel.rowconfigure(3, weight=1)  # Cart table row
+        right_panel.rowconfigure(2, weight=1)  # Cart table row gets ALL the space
         
-        # Title
-        tb.Label(right_panel, text="🛒 Current Sale", font=("Segoe UI", 16, "bold")).grid(row=0, column=0, sticky="w", pady=(0, 15))
+        # Title and Customer info - COMPACT SINGLE ROW
+        header_frame = tb.Frame(right_panel)
+        header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 8))
+        header_frame.columnconfigure(1, weight=1)
         
-        # Customer info
-        cust_frame = tb.Labelframe(right_panel, text="Customer Information", padding=10)
-        cust_frame.grid(row=1, column=0, sticky="ew", pady=(0, 10))
-        cust_frame.columnconfigure(1, weight=1)
-        cust_frame.columnconfigure(3, weight=1)
+        tb.Label(header_frame, text="🛒 Current Sale", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w", padx=(0, 20))
         
-        # Row 1: Name and Phone
-        tb.Label(cust_frame, text="Name:*", font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w", padx=(0, 10), pady=5)
-        self.cust_name = tb.Entry(cust_frame, font=("Segoe UI", 10))
-        self.cust_name.grid(row=0, column=1, sticky="ew", pady=5)
+        # Compact customer info in header
+        tb.Label(header_frame, text="Customer:", font=("Segoe UI", 9)).grid(row=0, column=1, sticky="w", padx=(0, 5))
+        self.cust_name = tb.Entry(header_frame, font=("Segoe UI", 9), width=15)
+        self.cust_name.grid(row=0, column=2, sticky="w", padx=(0, 10))
         
-        tb.Label(cust_frame, text="Phone:", font=("Segoe UI", 10)).grid(row=0, column=2, sticky="w", padx=(15, 10), pady=5)
-        self.cust_phone = tb.Entry(cust_frame, font=("Segoe UI", 10))
-        self.cust_phone.grid(row=0, column=3, sticky="ew", pady=5)
+        tb.Label(header_frame, text="Phone:", font=("Segoe UI", 9)).grid(row=0, column=3, sticky="w", padx=(0, 5))
+        self.cust_phone = tb.Entry(header_frame, font=("Segoe UI", 9), width=12)
+        self.cust_phone.grid(row=0, column=4, sticky="w", padx=(0, 10))
         self.cust_phone.bind("<KeyRelease>", self.search_customer)
         
-        # Row 2: Email and Address (MANDATORY)
-        tb.Label(cust_frame, text="Email:*", font=("Segoe UI", 10)).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
-        self.cust_email = tb.Entry(cust_frame, font=("Segoe UI", 10))
-        self.cust_email.grid(row=1, column=1, sticky="ew", pady=5)
+        tb.Label(header_frame, text="Email:", font=("Segoe UI", 9)).grid(row=0, column=5, sticky="w", padx=(0, 5))
+        self.cust_email = tb.Entry(header_frame, font=("Segoe UI", 9), width=15)
+        self.cust_email.grid(row=0, column=6, sticky="w", padx=(0, 10))
         
-        tb.Label(cust_frame, text="Address:*", font=("Segoe UI", 10)).grid(row=1, column=2, sticky="w", padx=(15, 10), pady=5)
-        self.cust_address = tb.Entry(cust_frame, font=("Segoe UI", 10))
-        self.cust_address.grid(row=1, column=3, sticky="ew", pady=5)
+        tb.Label(header_frame, text="Address:", font=("Segoe UI", 9)).grid(row=0, column=7, sticky="w", padx=(0, 5))
+        self.cust_address = tb.Entry(header_frame, font=("Segoe UI", 9), width=15)
+        self.cust_address.grid(row=0, column=8, sticky="ew")
         
-        # Customer info display with clear button
-        cust_info_container = tb.Frame(cust_frame)
-        cust_info_container.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(5, 0))
-        cust_info_container.columnconfigure(0, weight=1)
+        # Customer info display
+        self.cust_info_label = tb.Label(header_frame, text="", font=("Segoe UI", 8, "italic"), foreground="#6c757d")
+        self.cust_info_label.grid(row=1, column=1, columnspan=8, sticky="w", pady=(2, 0))
         
-        self.cust_info_label = tb.Label(cust_info_container, text="", font=("Segoe UI", 9, "italic"), foreground="#6c757d")
-        self.cust_info_label.grid(row=0, column=0, sticky="w")
-        
-        self.clear_customer_btn = tb.Button(cust_info_container, text="❌ Clear", bootstyle="danger-outline", command=self.clear_customer_data)
+        self.clear_customer_btn = tb.Button(header_frame, text="Clear", bootstyle="danger-outline", command=self.clear_customer_data)
         # Don't grid yet - show when customer found
         
         # Track last found phone
         self._last_found_phone = None
         
-        # Sale info cards - SMALLER AND COMPACT
+        # Sale info cards - INSIDE CART FRAME HEADER
         info_frame = tb.Frame(right_panel)
-        info_frame.grid(row=2, column=0, sticky="ew", pady=(0, 5))
+        info_frame.grid(row=1, column=0, sticky="ew", pady=(0, 5))
         info_frame.columnconfigure(0, weight=1)
         info_frame.columnconfigure(1, weight=1)
         info_frame.columnconfigure(2, weight=1)
         
-        items_card = tb.Frame(info_frame, bootstyle="info", padding=6)
+        items_card = tb.Frame(info_frame, bootstyle="info", padding=5)
         items_card.grid(row=0, column=0, sticky="ew", padx=(0, 3))
         tb.Label(items_card, text="Items", font=("Segoe UI", 8, "bold"), bootstyle="info-inverse").pack()
-        self.lbl_items_count = tb.Label(items_card, text="0", font=("Segoe UI", 12, "bold"), bootstyle="info-inverse")
+        self.lbl_items_count = tb.Label(items_card, text="0", font=("Segoe UI", 11, "bold"), bootstyle="info-inverse")
         self.lbl_items_count.pack()
         
-        qty_card = tb.Frame(info_frame, bootstyle="warning", padding=6)
+        qty_card = tb.Frame(info_frame, bootstyle="warning", padding=5)
         qty_card.grid(row=0, column=1, sticky="ew", padx=3)
         tb.Label(qty_card, text="Qty", font=("Segoe UI", 8, "bold"), bootstyle="warning-inverse").pack()
-        self.lbl_total_qty = tb.Label(qty_card, text="0", font=("Segoe UI", 12, "bold"), bootstyle="warning-inverse")
+        self.lbl_total_qty = tb.Label(qty_card, text="0", font=("Segoe UI", 11, "bold"), bootstyle="warning-inverse")
         self.lbl_total_qty.pack()
         
-        profit_card = tb.Frame(info_frame, bootstyle="secondary", padding=6)
+        profit_card = tb.Frame(info_frame, bootstyle="secondary", padding=5)
         profit_card.grid(row=0, column=2, sticky="ew", padx=(3, 0))
         tb.Label(profit_card, text="Profit", font=("Segoe UI", 8, "bold"), bootstyle="secondary-inverse").pack()
-        self.lbl_profit = tb.Label(profit_card, text="EGP 0", font=("Segoe UI", 12, "bold"), bootstyle="secondary-inverse")
+        self.lbl_profit = tb.Label(profit_card, text="EGP 0", font=("Segoe UI", 11, "bold"), bootstyle="secondary-inverse")
         self.lbl_profit.pack()
         
-        # Cart table - ENLARGED AND HIGHLY VISUAL
+        # Cart table - MASSIVELY ENLARGED - TAKES UP MOST OF THE SPACE
         cart_frame = tb.Labelframe(right_panel, text="🛒 Cart Items", padding=15, bootstyle="primary")
-        cart_frame.grid(row=3, column=0, sticky="nsew", pady=(0, 10))
+        cart_frame.grid(row=2, column=0, sticky="nsew", pady=(0, 8))
         cart_frame.columnconfigure(0, weight=1)
         cart_frame.rowconfigure(0, weight=1)
         
         c_cols = ("sku", "name", "qty", "stock", "price", "total")
-        self.cart_tree = ttk.Treeview(cart_frame, columns=c_cols, show="headings", height=18)  # Optimized height
+        self.cart_tree = ttk.Treeview(cart_frame, columns=c_cols, show="headings", height=25)  # MUCH LARGER HEIGHT
         
         # Center-align all headers for consistency
         self.cart_tree.heading("sku", text="SKU", anchor="center")
@@ -212,7 +205,7 @@ class SalesFrame:
         
         # Cart buttons
         cart_btn_frame = tb.Frame(right_panel)
-        cart_btn_frame.grid(row=4, column=0, sticky="ew", pady=(0, 10))
+        cart_btn_frame.grid(row=3, column=0, sticky="ew", pady=(0, 8))
         cart_btn_frame.columnconfigure(0, weight=1)
         cart_btn_frame.columnconfigure(1, weight=1)
         cart_btn_frame.columnconfigure(2, weight=1)
@@ -221,78 +214,71 @@ class SalesFrame:
         tb.Button(cart_btn_frame, text="Remove", bootstyle="warning-outline", command=self.remove_from_cart).grid(row=0, column=1, sticky="ew", padx=5)
         tb.Button(cart_btn_frame, text="Clear Cart", bootstyle="danger-outline", command=self.clear_cart).grid(row=0, column=2, sticky="ew", padx=(5, 0))
         
-        # Summary
-        summary_frame = tb.Labelframe(right_panel, text="Summary", padding=15)
-        summary_frame.grid(row=5, column=0, sticky="ew", pady=(0, 10))
+        # Summary - COMPACT
+        summary_frame = tb.Labelframe(right_panel, text="Summary", padding=10)
+        summary_frame.grid(row=4, column=0, sticky="ew", pady=(0, 8))
         
-        # Subtotal
-        subtotal_row = tb.Frame(summary_frame)
-        subtotal_row.pack(fill="x", pady=5)
-        tb.Label(subtotal_row, text="Subtotal:", font=("Segoe UI", 11)).pack(side="left")
-        self.lbl_subtotal = tb.Label(subtotal_row, text="EGP 0.00", font=("Segoe UI", 11, "bold"))
-        self.lbl_subtotal.pack(side="right")
+        # Compact summary layout
+        summary_grid = tb.Frame(summary_frame)
+        summary_grid.pack(fill="x")
+        summary_grid.columnconfigure(1, weight=1)
+        summary_grid.columnconfigure(3, weight=1)
         
-        # Discount
-        discount_row = tb.Frame(summary_frame)
-        discount_row.pack(fill="x", pady=5)
-        tb.Label(discount_row, text="Discount %:", font=("Segoe UI", 11)).pack(side="left")
-        self.discount_var = tb.StringVar(value="")  # Empty by default for faster typing
-        discount_entry = tb.Entry(discount_row, textvariable=self.discount_var, width=8, font=("Segoe UI", 11))
-        discount_entry.pack(side="right", padx=(10, 0))
+        # Row 1: Subtotal and Discount
+        tb.Label(summary_grid, text="Subtotal:", font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w", pady=3)
+        self.lbl_subtotal = tb.Label(summary_grid, text="EGP 0.00", font=("Segoe UI", 10, "bold"))
+        self.lbl_subtotal.grid(row=0, column=1, sticky="e", pady=3)
+        
+        tb.Label(summary_grid, text="Discount %:", font=("Segoe UI", 10)).grid(row=0, column=2, sticky="w", padx=(15, 5), pady=3)
+        self.discount_var = tb.StringVar(value="")
+        discount_entry = tb.Entry(summary_grid, textvariable=self.discount_var, width=6, font=("Segoe UI", 10))
+        discount_entry.grid(row=0, column=3, sticky="e", pady=3)
         self.discount_var.trace("w", lambda *args: self.update_cart_view())
         
-        # Payment Method
-        payment_row = tb.Frame(summary_frame)
-        payment_row.pack(fill="x", pady=5)
-        tb.Label(payment_row, text="Payment:", font=("Segoe UI", 11)).pack(side="left")
+        # Row 2: Payment and Notes
+        tb.Label(summary_grid, text="Payment:", font=("Segoe UI", 10)).grid(row=1, column=0, sticky="w", pady=3)
         self.payment_method_var = tb.StringVar(value="Cash")
         from modules.constants import PAYMENT_METHODS
         payment_combo = tb.Combobox(
-            payment_row,
+            summary_grid,
             textvariable=self.payment_method_var,
             values=PAYMENT_METHODS,
             state="readonly",
-            width=15,
-            font=("Segoe UI", 10)
+            width=12,
+            font=("Segoe UI", 9)
         )
-        payment_combo.pack(side="right", padx=(10, 0))
+        payment_combo.grid(row=1, column=1, sticky="ew", pady=3)
         
-        # Notes/Comments
-        notes_row = tb.Frame(summary_frame)
-        notes_row.pack(fill="x", pady=5)
-        tb.Label(notes_row, text="Notes:", font=("Segoe UI", 11)).pack(side="left", anchor="n", pady=5)
-        self.notes_text = tb.Text(notes_row, height=2, font=("Segoe UI", 10), wrap="word")
-        self.notes_text.pack(side="right", fill="x", expand=True, padx=(10, 0))
-        
-        # Add placeholder
-        notes_placeholder = "Optional notes (e.g., gift wrap, special instructions...)"
-        self.notes_text.insert("1.0", notes_placeholder)
+        tb.Label(summary_grid, text="Notes:", font=("Segoe UI", 10)).grid(row=1, column=2, sticky="w", padx=(15, 5), pady=3)
+        self.notes_text = tb.Entry(summary_grid, font=("Segoe UI", 9))
+        self.notes_text.grid(row=1, column=3, sticky="ew", pady=3)
+        self.notes_text.insert(0, "Optional...")
         self.notes_text.config(foreground='#999999')
         
         def on_notes_focus_in(event):
-            if self.notes_text.get("1.0", "end-1c") == notes_placeholder:
-                self.notes_text.delete("1.0", "end")
+            if self.notes_text.get() == "Optional...":
+                self.notes_text.delete(0, "end")
                 self.notes_text.config(foreground='#000000')
         
         def on_notes_focus_out(event):
-            if not self.notes_text.get("1.0", "end-1c").strip():
-                self.notes_text.insert("1.0", notes_placeholder)
+            if not self.notes_text.get().strip():
+                self.notes_text.insert(0, "Optional...")
                 self.notes_text.config(foreground='#999999')
         
         self.notes_text.bind('<FocusIn>', on_notes_focus_in)
         self.notes_text.bind('<FocusOut>', on_notes_focus_out)
         
-        # Total
-        ttk.Separator(summary_frame, orient="horizontal").pack(fill="x", pady=10)
+        # Total - PROMINENT
+        ttk.Separator(summary_frame, orient="horizontal").pack(fill="x", pady=8)
         total_row = tb.Frame(summary_frame)
-        total_row.pack(fill="x", pady=5)
-        tb.Label(total_row, text="TOTAL:", font=("Segoe UI", 14, "bold")).pack(side="left")
-        self.lbl_total = tb.Label(total_row, text="EGP 0.00", font=("Segoe UI", 18, "bold"), bootstyle="success")
+        total_row.pack(fill="x")
+        tb.Label(total_row, text="TOTAL:", font=("Segoe UI", 13, "bold")).pack(side="left")
+        self.lbl_total = tb.Label(total_row, text="EGP 0.00", font=("Segoe UI", 16, "bold"), bootstyle="success")
         self.lbl_total.pack(side="right")
         
-        # Checkout button
-        self.checkout_btn = tb.Button(right_panel, text="✅ CHECKOUT", bootstyle="success", command=self.checkout)
-        self.checkout_btn.grid(row=6, column=0, sticky="ew", ipady=10)
+        # Checkout button - LARGER
+        self.checkout_btn = tb.Button(right_panel, text="✅ CHECKOUT", bootstyle="success", command=self.checkout, padding=12)
+        self.checkout_btn.grid(row=5, column=0, sticky="ew")
         
         # Load inventory
         self.all_inventory = []
@@ -654,11 +640,8 @@ class SalesFrame:
         payment_method = self.payment_method_var.get()
         
         # Get notes (check if it's placeholder)
-        notes = self.notes_text.get("1.0", "end-1c").strip()
-        notes_placeholder = "Optional notes (e.g., gift wrap, special instructions...)"
-        if notes == notes_placeholder:
-            notes = None
-        elif not notes:
+        notes = self.notes_text.get().strip()
+        if notes == "Optional..." or not notes:
             notes = None
         
         # Prepare items with full details for comprehensive tracking
@@ -706,9 +689,8 @@ class SalesFrame:
                 self._last_found_phone = None
                 
                 # Clear notes
-                self.notes_text.delete("1.0", "end")
-                notes_placeholder = "Optional notes (e.g., gift wrap, special instructions...)"
-                self.notes_text.insert("1.0", notes_placeholder)
+                self.notes_text.delete(0, "end")
+                self.notes_text.insert(0, "Optional...")
                 self.notes_text.config(foreground='#999999')
                 
                 self.update_cart_view()
