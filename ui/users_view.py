@@ -223,11 +223,11 @@ class UsersFrame:
         # Column configuration
         widths = {"id": 50, "username": 180, "full_name": 220, "role": 120, "created_at": 180, "actions": 200}
         labels = {"id": "ID", "username": "👤 Username", "full_name": "📝 Full Name", "role": "🎭 Role", "created_at": "📅 Created At", "actions": "⚙️ Actions"}
-        alignments = {"id": "center", "username": "w", "full_name": "w", "role": "center", "created_at": "center", "actions": "center"}
+        alignments = {"id": "center", "username": "center", "full_name": "center", "role": "center", "created_at": "center", "actions": "center"}
         
         for c in cols:
-            self.tree.heading(c, text=labels.get(c, c))
-            self.tree.column(c, width=widths.get(c, 120), anchor=alignments.get(c, "w"))
+            self.tree.heading(c, text=labels.get(c, c), anchor="center")
+            self.tree.column(c, width=widths.get(c, 120), anchor=alignments.get(c, "center"))
         
         # Alternating row colors
         self.tree.tag_configure("oddrow", background="#f8f9fa")
