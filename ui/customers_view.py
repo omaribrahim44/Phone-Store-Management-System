@@ -275,7 +275,7 @@ class CustomersFrame:
             customer_type = row[5]
             purchases = row[6]
             repairs = row[7]
-            spent = f"EGP {row[8]:,.2f}" if row[8] else "EGP 0.00"
+            spent = f"{row[8]:,.2f}" if row[8] else "0.00"
             
             # Determine last activity
             last_purchase = row[9]
