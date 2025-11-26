@@ -199,13 +199,13 @@ class InventoryFrame:
         # Column alignments
         alignments = {
             "id": "center",
-            "sku": "w",
-            "name": "w",
+            "sku": "center",
+            "name": "center",
             "category": "center",
             "qty": "center",
-            "buy": "e",
-            "sell": "e",
-            "value": "e"
+            "buy": "center",
+            "sell": "center",
+            "value": "center"
         }
         
         # Configure columns with matching header and data alignment
@@ -364,8 +364,8 @@ class InventoryFrame:
                 row[2],  # name
                 row[3],  # category
                 row[4],  # qty
-                f"EGP {buy_price:,.2f}",  # buy price (unit price, not total)
-                f"EGP {sell_price:,.2f}",  # sell price (unit price, not total)
+                f"{buy_price:,.2f}",  # buy price (unit price, not total)
+                f"{sell_price:,.2f}",  # sell price (unit price, not total)
                 f"EGP {total_value:,.2f}"  # total value (qty * buy_price)
             ]
             
