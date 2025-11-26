@@ -359,7 +359,7 @@ def generate_sales_receipt_pdf(sale_data, items, filename=None):
     # Summary box with gradient effect
     summary_box_width = 8*cm
     summary_box_x = width - 2*cm - summary_box_width
-    summary_box_height = 3*cm if sale_data[4] > 0 else 2.5*cm
+    summary_box_height = 3*cm if sale_data.get('discount_amount', 0) > 0 else 2.5*cm
     
     c.setStrokeColor(colors.HexColor('#2C5282'))
     c.setFillColor(colors.HexColor('#EDF2F7'))

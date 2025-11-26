@@ -1009,75 +1009,36 @@ class SalesFrame:
             foreground="#6c757d"
         ).pack(pady=(10, 0))
         
-        # Print receipt function
-        def print_receipt():
-            """Generate and print receipt"""
-            try:
-                # Try to import receipt generator
-                try:
-                    from modules.reports.receipt_generator import generate_sales_receipt_pdf
-                    pdf_path = generate_sales_receipt_pdf(sale_data, receipt_items)
-                    
-                    # Open PDF
-                    try:
-                        os.startfile(pdf_path)
-                        messagebox.showinfo(
-                            "Receipt Generated", 
-                            f"✓ Receipt opened successfully!\n\nSaved to:\n{pdf_path}"
-                        )
-                    except:
-                        messagebox.showinfo(
-                            "Receipt Saved", 
-                            f"✓ Receipt saved successfully!\n\nLocation:\n{pdf_path}\n\nPlease open it manually."
-                        )
-                except ImportError:
-                    # Fallback: Simple text receipt
-                    messagebox.showinfo(
-                        "Print Receipt",
-                        f"Receipt for Sale #{sale_data['sale_id']}\n\n"
-                        f"Customer: {sale_data['customer_name']}\n"
-                        f"Date: {sale_data['date_time']}\n"
-                        f"Total: EGP {sale_data['grand_total']:,.2f}\n\n"
-                        f"Receipt generator module not found.\n"
-                        f"Please install receipt generator for PDF receipts."
-                    )
-            except Exception as e:
-                messagebox.showerror("Receipt Error", f"Could not generate receipt:\n{e}")
-        
-        def close_dialog():
-            """Close the dialog"""
-            unbind_from_mousewheel(dialog)
-            dialog.destroy()
-        
-        # === BUTTONS SECTION - AT THE VERY BOTTOM ===
+        # === BUTTONS SECTION - FIXED AT BOTTOM ===
         # Separator line
-        ttk.Separator(dialog, orient="horizontal").pack(fill="x", pady=10)
+        ttk.Separator(dialog, orient="horizontal").pack(fill="x", pady=(5, 0))
         
-        # Buttons container with background
-        buttons_container = tb.Frame(dialog, padding=25, bootstyle="light")
+        # Buttons container with proper padding
+        buttons_container = tb.Frame(dialog, padding=(30, 20), bootstyle="light")
         buttons_container.pack(fill="x", side="bottom")
         
         # Info message ABOVE buttons
         tb.Label(
             buttons_container,
             text="💡 You can print the receipt now or close to continue",
-            font=("Segoe UI", 11, "italic"),
+            font=("Segoe UI", 10, "italic"),
             foreground="#6c757d"
-        ).pack(pady=(0, 15))
+        ).pack(pady=(0, 20))
         
-        # Buttons row - CENTERED
+        # Buttons row - CENTERED with proper spacing
         buttons_row = tb.Frame(buttons_container)
-        buttons_row.pack()
+        buttons_row.pack(expand=True)
         
-        # Print Receipt button - VERY LARGE AND BLUE
+        # Print Receipt button - LARGE AND BLUE
         print_btn = tb.Button(
             buttons_row,
             text="🖨️  PRINT RECEIPT",
             bootstyle="primary",
             command=print_receipt,
-            width=30
+            width=25
         )
-        print_btn.pack(side="left", padx=15, ipady=15)
+        print_btn.pack(side="left", padx=20, ipady=12)
+        print_btn.configure(cursor="hand2")
         
         # Close button - LARGE AND GREEN
         close_btn = tb.Button(
@@ -1085,9 +1046,10 @@ class SalesFrame:
             text="✓  CLOSE",
             bootstyle="success",
             command=close_dialog,
-            width=30
+            width=25
         )
-        close_btn.pack(side="left", padx=15, ipady=15)
+        close_btn.pack(side="left", padx=20, ipady=12)
+        close_btn.configure(cursor="hand2")
         
         # Bind mouse wheel
         try:
