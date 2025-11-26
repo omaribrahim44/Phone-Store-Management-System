@@ -768,14 +768,14 @@ class SalesFrame:
             bootstyle="success-inverse"
         ).pack()
         
-        # Scrollable content area
+        # Scrollable content area - BETWEEN header and buttons
         content_container = tb.Frame(dialog)
-        content_container.pack(fill="both", expand=True)
+        content_container.pack(fill="both", expand=True, pady=(0, 0))
         
         # Create canvas for scrolling
         canvas = tb.Canvas(content_container, highlightthickness=0)
         scrollbar = ttk.Scrollbar(content_container, orient="vertical", command=canvas.yview)
-        details_frame = tb.Frame(canvas, padding=30)
+        details_frame = tb.Frame(canvas, padding=25)
         
         details_frame.bind(
             "<Configure>",
@@ -981,13 +981,7 @@ class SalesFrame:
             foreground="#6c757d"
         ).pack(pady=(10, 0))
         
-        # Buttons frame - Fixed at bottom
-        buttons_container = tb.Frame(dialog, padding=20)
-        buttons_container.pack(fill="x", side="bottom")
-        
-        buttons_frame = tb.Frame(buttons_container)
-        buttons_frame.pack()
-        
+        # Print receipt function
         def print_receipt():
             """Generate and print receipt"""
             try:
@@ -1027,36 +1021,43 @@ class SalesFrame:
             unbind_from_mousewheel(dialog)
             dialog.destroy()
         
-        # Print Receipt button (primary action)
+        # === BUTTONS SECTION - FIXED AT BOTTOM ===
+        buttons_container = tb.Frame(dialog, padding=20, bootstyle="light")
+        buttons_container.pack(fill="x", side="bottom")
+        
+        # Buttons row
+        buttons_row = tb.Frame(buttons_container)
+        buttons_row.pack()
+        
+        # Print Receipt button (primary action) - LARGE AND PROMINENT
         tb.Button(
-            buttons_frame,
+            buttons_row,
             text="🖨️  Print Receipt",
             bootstyle="primary",
             command=print_receipt,
-            width=22
-        ).pack(side="left", padx=8, ipady=12)
+            width=25,
+            padding=15
+        ).pack(side="left", padx=10)
         
         # Close button
         tb.Button(
-            buttons_frame,
+            buttons_row,
             text="✓  Close",
             bootstyle="success",
             command=close_dialog,
-            width=22
-        ).pack(side="left", padx=8, ipady=12)
+            width=25,
+            padding=15
+        ).pack(side="left", padx=10)
         
         # Info message
-        info_container = tb.Frame(buttons_container)
-        info_container.pack(fill="x", pady=(15, 0))
-        
         tb.Label(
-            info_container,
+            buttons_container,
             text="💡 Tip: You can print the receipt now or close and continue with the next sale",
             font=("Segoe UI", 10, "italic"),
             foreground="#6c757d",
-            wraplength=550,
+            wraplength=700,
             justify="center"
-        ).pack()
+        ).pack(pady=(15, 0))
         
         # Bind mouse wheel after all widgets are created
         bind_to_mousewheel(dialog)
