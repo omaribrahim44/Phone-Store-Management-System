@@ -94,46 +94,53 @@ class SalesFrame:
         right_panel = tb.Frame(self.frame)
         right_panel.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
         right_panel.columnconfigure(0, weight=1)
-        right_panel.rowconfigure(2, weight=1)  # Cart table row gets ALL the space
+        right_panel.rowconfigure(3, weight=1)  # Cart table row gets ALL the space
         
-        # Title and Customer info - COMPACT SINGLE ROW
-        header_frame = tb.Frame(right_panel)
-        header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 8))
-        header_frame.columnconfigure(1, weight=1)
+        # Title
+        tb.Label(right_panel, text="🛒 Current Sale", font=("Segoe UI", 16, "bold")).grid(row=0, column=0, sticky="w", pady=(0, 10))
         
-        tb.Label(header_frame, text="🛒 Current Sale", font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w", padx=(0, 20))
+        # Customer Information - ENLARGED 2-ROW LAYOUT
+        cust_frame = tb.Labelframe(right_panel, text="Customer Information", padding=12)
+        cust_frame.grid(row=1, column=0, sticky="ew", pady=(0, 10))
+        cust_frame.columnconfigure(1, weight=1)
+        cust_frame.columnconfigure(3, weight=1)
         
-        # Compact customer info in header
-        tb.Label(header_frame, text="Customer:", font=("Segoe UI", 9)).grid(row=0, column=1, sticky="w", padx=(0, 5))
-        self.cust_name = tb.Entry(header_frame, font=("Segoe UI", 9), width=15)
-        self.cust_name.grid(row=0, column=2, sticky="w", padx=(0, 10))
+        # Row 1: Name (required) and Phone
+        tb.Label(cust_frame, text="Name:*", font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w", padx=(0, 10), pady=6)
+        self.cust_name = tb.Entry(cust_frame, font=("Segoe UI", 11))
+        self.cust_name.grid(row=0, column=1, sticky="ew", pady=6)
         
-        tb.Label(header_frame, text="Phone:", font=("Segoe UI", 9)).grid(row=0, column=3, sticky="w", padx=(0, 5))
-        self.cust_phone = tb.Entry(header_frame, font=("Segoe UI", 9), width=12)
-        self.cust_phone.grid(row=0, column=4, sticky="w", padx=(0, 10))
+        tb.Label(cust_frame, text="Phone:", font=("Segoe UI", 10)).grid(row=0, column=2, sticky="w", padx=(20, 10), pady=6)
+        self.cust_phone = tb.Entry(cust_frame, font=("Segoe UI", 11))
+        self.cust_phone.grid(row=0, column=3, sticky="ew", pady=6)
         self.cust_phone.bind("<KeyRelease>", self.search_customer)
         
-        tb.Label(header_frame, text="Email:", font=("Segoe UI", 9)).grid(row=0, column=5, sticky="w", padx=(0, 5))
-        self.cust_email = tb.Entry(header_frame, font=("Segoe UI", 9), width=15)
-        self.cust_email.grid(row=0, column=6, sticky="w", padx=(0, 10))
+        # Row 2: Email and Address (both optional)
+        tb.Label(cust_frame, text="Email:", font=("Segoe UI", 10)).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=6)
+        self.cust_email = tb.Entry(cust_frame, font=("Segoe UI", 11))
+        self.cust_email.grid(row=1, column=1, sticky="ew", pady=6)
         
-        tb.Label(header_frame, text="Address:", font=("Segoe UI", 9)).grid(row=0, column=7, sticky="w", padx=(0, 5))
-        self.cust_address = tb.Entry(header_frame, font=("Segoe UI", 9), width=15)
-        self.cust_address.grid(row=0, column=8, sticky="ew")
+        tb.Label(cust_frame, text="Address:", font=("Segoe UI", 10)).grid(row=1, column=2, sticky="w", padx=(20, 10), pady=6)
+        self.cust_address = tb.Entry(cust_frame, font=("Segoe UI", 11))
+        self.cust_address.grid(row=1, column=3, sticky="ew", pady=6)
         
-        # Customer info display
-        self.cust_info_label = tb.Label(header_frame, text="", font=("Segoe UI", 8, "italic"), foreground="#6c757d")
-        self.cust_info_label.grid(row=1, column=1, columnspan=8, sticky="w", pady=(2, 0))
+        # Customer info display with clear button
+        cust_info_container = tb.Frame(cust_frame)
+        cust_info_container.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(5, 0))
+        cust_info_container.columnconfigure(0, weight=1)
         
-        self.clear_customer_btn = tb.Button(header_frame, text="Clear", bootstyle="danger-outline", command=self.clear_customer_data)
+        self.cust_info_label = tb.Label(cust_info_container, text="", font=("Segoe UI", 9, "italic"), foreground="#6c757d")
+        self.cust_info_label.grid(row=0, column=0, sticky="w")
+        
+        self.clear_customer_btn = tb.Button(cust_info_container, text="❌ Clear", bootstyle="danger-outline", command=self.clear_customer_data)
         # Don't grid yet - show when customer found
         
         # Track last found phone
         self._last_found_phone = None
         
-        # Sale info cards - INSIDE CART FRAME HEADER
+        # Sale info cards
         info_frame = tb.Frame(right_panel)
-        info_frame.grid(row=1, column=0, sticky="ew", pady=(0, 5))
+        info_frame.grid(row=2, column=0, sticky="ew", pady=(0, 8))
         info_frame.columnconfigure(0, weight=1)
         info_frame.columnconfigure(1, weight=1)
         info_frame.columnconfigure(2, weight=1)
@@ -158,7 +165,7 @@ class SalesFrame:
         
         # Cart table - MASSIVELY ENLARGED - TAKES UP MOST OF THE SPACE
         cart_frame = tb.Labelframe(right_panel, text="🛒 Cart Items", padding=15, bootstyle="primary")
-        cart_frame.grid(row=2, column=0, sticky="nsew", pady=(0, 8))
+        cart_frame.grid(row=3, column=0, sticky="nsew", pady=(0, 8))
         cart_frame.columnconfigure(0, weight=1)
         cart_frame.rowconfigure(0, weight=1)
         
@@ -205,7 +212,7 @@ class SalesFrame:
         
         # Cart buttons
         cart_btn_frame = tb.Frame(right_panel)
-        cart_btn_frame.grid(row=3, column=0, sticky="ew", pady=(0, 8))
+        cart_btn_frame.grid(row=4, column=0, sticky="ew", pady=(0, 8))
         cart_btn_frame.columnconfigure(0, weight=1)
         cart_btn_frame.columnconfigure(1, weight=1)
         cart_btn_frame.columnconfigure(2, weight=1)
@@ -216,7 +223,7 @@ class SalesFrame:
         
         # Summary - COMPACT
         summary_frame = tb.Labelframe(right_panel, text="Summary", padding=10)
-        summary_frame.grid(row=4, column=0, sticky="ew", pady=(0, 8))
+        summary_frame.grid(row=5, column=0, sticky="ew", pady=(0, 8))
         
         # Compact summary layout
         summary_grid = tb.Frame(summary_frame)
@@ -278,7 +285,7 @@ class SalesFrame:
         
         # Checkout button - LARGER
         self.checkout_btn = tb.Button(right_panel, text="✅ CHECKOUT", bootstyle="success", command=self.checkout, padding=12)
-        self.checkout_btn.grid(row=5, column=0, sticky="ew")
+        self.checkout_btn.grid(row=6, column=0, sticky="ew")
         
         # Load inventory
         self.all_inventory = []
@@ -619,15 +626,7 @@ class SalesFrame:
             self.cust_name.focus()
             return
         
-        if not cust_email:
-            messagebox.showwarning("Email Required", "Please enter customer email address.")
-            self.cust_email.focus()
-            return
-        
-        if not cust_address:
-            messagebox.showwarning("Address Required", "Please enter customer address.")
-            self.cust_address.focus()
-            return
+        # Email and Address are now optional - no validation needed
         
         # Calculate discount
         try:
