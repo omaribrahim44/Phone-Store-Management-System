@@ -131,8 +131,8 @@ class ReportsFrame:
         widths = {"id": 70, "time": 80, "customer": 150, "items": 60, "subtotal": 100, "discount": 100, "total": 120, "profit": 100}
         
         for col in cols:
-            tree.heading(col, text=headers[col])
-            tree.column(col, width=widths[col], anchor="center" if col in ["id", "items"] else "e" if col != "customer" else "w")
+            tree.heading(col, text=headers[col], anchor="center")
+            tree.column(col, width=widths[col], anchor="center")
         
         tree.grid(row=0, column=0, sticky="nsew")
         
@@ -166,10 +166,10 @@ class ReportsFrame:
                 row[1] or "N/A",
                 row[2],
                 row[3],
-                f"EGP {row[4]:,.2f}" if row[4] else "EGP 0.00",
-                f"EGP {row[5]:,.2f}" if row[5] else "EGP 0.00",
-                f"EGP {row[6]:,.2f}" if row[6] else "EGP 0.00",
-                f"EGP {row[7]:,.2f}" if row[7] else "EGP 0.00"
+                f"{row[4]:,.2f}" if row[4] else "0.00",
+                f"{row[5]:,.2f}" if row[5] else "0.00",
+                f"{row[6]:,.2f}" if row[6] else "0.00",
+                f"{row[7]:,.2f}" if row[7] else "0.00"
             ))
         
         conn.close()
@@ -261,8 +261,8 @@ class ReportsFrame:
         widths = {"date": 120, "sales": 100, "revenue": 150, "profit": 150, "avg_sale": 150}
         
         for col in cols:
-            tree.heading(col, text=headers[col])
-            tree.column(col, width=widths[col], anchor="center" if col == "sales" else "e" if col != "date" else "w")
+            tree.heading(col, text=headers[col], anchor="center")
+            tree.column(col, width=widths[col], anchor="center")
         
         tree.grid(row=0, column=0, sticky="nsew")
         
@@ -289,9 +289,9 @@ class ReportsFrame:
             tree.insert("", "end", values=(
                 row[0],
                 row[1],
-                f"EGP {row[2]:,.2f}" if row[2] else "EGP 0.00",
-                f"EGP {row[3]:,.2f}" if row[3] else "EGP 0.00",
-                f"EGP {avg_sale:,.2f}"
+                f"{row[2]:,.2f}" if row[2] else "0.00",
+                f"{row[3]:,.2f}" if row[3] else "0.00",
+                f"{avg_sale:,.2f}"
             ))
         
         conn.close()
