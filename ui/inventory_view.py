@@ -94,6 +94,22 @@ class InventoryFrame:
         search_entry = tb.Entry(filter_frame, textvariable=self.search_var, font=("Segoe UI", 11))
         search_entry.grid(row=0, column=1, sticky="ew", padx=(0, 20))
         
+        # Category filter dropdown
+        tb.Label(filter_frame, text="Category:", font=("Segoe UI", 11, "bold")).grid(row=0, column=2, sticky="w", padx=(0, 10))
+        self.category_var = tb.StringVar(value="All Categories")
+        self.category_combo = tb.Combobox(
+            filter_frame, 
+            textvariable=self.category_var, 
+            font=("Segoe UI", 11),
+            state="readonly",
+            width=20
+        )
+        self.category_combo.grid(row=0, column=3, sticky="w", padx=(0, 20))
+        self.category_combo.bind("<<ComboboxSelected>>", lambda e: self.filter_items())
+        
+        # Load categories
+        self.load_categories()
+        
         # Add placeholder functionality
         def add_placeholder(entry, placeholder_text):
             entry.placeholder = placeholder_text
@@ -256,9 +272,26 @@ class InventoryFrame:
         self.all_items = []
         self.refresh()
 
+    def load_categories(self):
+        """Load unique categories from inventory"""
+        try:
+            items = InventoryController.get_all_items()
+            categories = set()
+            for item in items:
+                if item[3]:  # category is at index 3
+                    categories.add(str(item[3]))
+            
+            # Update combobox values
+            category_list = ["All Categories"] + sorted(list(categories))
+            self.category_combo['values'] = category_list
+            self.category_var.set("All Categories")
+        except Exception as e:
+            print(f"Error loading categories: {e}")
+
     def refresh(self):
         try:
             self.all_items = InventoryController.get_all_items()
+            self.load_categories()  # Reload categories when refreshing
             self.filter_items()
             # Notify ALL views that inventory was refreshed
             from modules.event_manager import event_manager
@@ -278,6 +311,9 @@ class InventoryFrame:
             query = ""
         low_stock = self.low_stock_var.get()
         
+        # Get category filter
+        selected_category = self.category_var.get() if hasattr(self, 'category_var') else "All Categories"
+        
         for item in self.tree.get_children():
             self.tree.delete(item)
         
@@ -286,6 +322,12 @@ class InventoryFrame:
         
         for idx, row in enumerate(self.all_items):
             # row: id, sku, name, category, qty, buy_price, sell_price
+            # Filter by category
+            if selected_category != "All Categories":
+                item_category = str(row[3])  # category is at index 3
+                if item_category != selected_category:
+                    continue
+            
             # Filter by text
             if query:
                 combined = " ".join([str(x) for x in row]).lower()
