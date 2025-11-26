@@ -592,56 +592,68 @@ class RepairsFrame:
             return
 
         win = tb.Toplevel(self.frame)
-        win.title(f"Repair Order #{order[1]} - Details")
-        win.geometry("1000x700")
+        win.title(f"🔧 Repair Order #{order[1]} - Details")
+        
+        # Make dialog larger and use 85% of screen height
+        screen_width = win.winfo_screenwidth()
+        screen_height = win.winfo_screenheight()
+        dialog_width = min(1200, int(screen_width * 0.9))  # Max 1200px or 90% of screen
+        dialog_height = int(screen_height * 0.85)  # 85% of screen height
+        
+        win.geometry(f"{dialog_width}x{dialog_height}")
         win.resizable(True, True)
         
         # Center window
         win.update_idletasks()
-        x = (win.winfo_screenwidth() // 2) - (1000 // 2)
-        y = (win.winfo_screenheight() // 2) - (700 // 2)
-        win.geometry(f"1000x700+{x}+{y}")
+        x = (screen_width // 2) - (dialog_width // 2)
+        y = (screen_height // 2) - (dialog_height // 2)
+        win.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
 
-        # Header with order info
-        header = tb.Labelframe(win, text="Order Information", padding=15, bootstyle="primary")
-        header.pack(fill="x", padx=15, pady=(15, 10))
+        # Header with order info - Enhanced styling
+        header = tb.Labelframe(win, text="📋 Order Information", padding=20, bootstyle="primary")
+        header.pack(fill="x", padx=20, pady=(20, 15))
         
         info_grid = tb.Frame(header)
         info_grid.pack(fill="x")
         info_grid.columnconfigure(1, weight=1)
         info_grid.columnconfigure(3, weight=1)
         
-        # Row 1
-        tb.Label(info_grid, text="Order #:", font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w", padx=5, pady=3)
-        tb.Label(info_grid, text=order[1], font=("Segoe UI", 10)).grid(row=0, column=1, sticky="w", padx=5)
+        # Row 1 - Order # and Status with better spacing
+        tb.Label(info_grid, text="Order #:", font=("Segoe UI", 11, "bold")).grid(row=0, column=0, sticky="w", padx=(0, 10), pady=8)
+        tb.Label(info_grid, text=order[1], font=("Segoe UI", 12, "bold"), bootstyle="primary").grid(row=0, column=1, sticky="w", padx=5, pady=8)
         
-        tb.Label(info_grid, text="Status:", font=("Segoe UI", 10, "bold")).grid(row=0, column=2, sticky="w", padx=5, pady=3)
-        status_label = tb.Label(info_grid, text=order[6] if len(order) > 6 else "Unknown", font=("Segoe UI", 10), bootstyle="info")
-        status_label.grid(row=0, column=3, sticky="w", padx=5)
+        tb.Label(info_grid, text="Status:", font=("Segoe UI", 11, "bold")).grid(row=0, column=2, sticky="w", padx=(30, 10), pady=8)
+        status_label = tb.Label(info_grid, text=order[6] if len(order) > 6 else "Unknown", font=("Segoe UI", 11, "bold"), bootstyle="info")
+        status_label.grid(row=0, column=3, sticky="w", padx=5, pady=8)
         
-        # Row 2
-        tb.Label(info_grid, text="Customer:", font=("Segoe UI", 10, "bold")).grid(row=1, column=0, sticky="w", padx=5, pady=3)
-        tb.Label(info_grid, text=order[2], font=("Segoe UI", 10)).grid(row=1, column=1, sticky="w", padx=5)
+        # Row 2 - Customer and Phone
+        tb.Label(info_grid, text="Customer:", font=("Segoe UI", 11, "bold")).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=8)
+        tb.Label(info_grid, text=order[2], font=("Segoe UI", 11)).grid(row=1, column=1, sticky="w", padx=5, pady=8)
         
-        tb.Label(info_grid, text="Phone:", font=("Segoe UI", 10, "bold")).grid(row=1, column=2, sticky="w", padx=5, pady=3)
-        tb.Label(info_grid, text=order[3], font=("Segoe UI", 10)).grid(row=1, column=3, sticky="w", padx=5)
+        tb.Label(info_grid, text="Phone:", font=("Segoe UI", 11, "bold")).grid(row=1, column=2, sticky="w", padx=(30, 10), pady=8)
+        tb.Label(info_grid, text=order[3], font=("Segoe UI", 11)).grid(row=1, column=3, sticky="w", padx=5, pady=8)
         
-        # Row 3
-        tb.Label(info_grid, text="Device:", font=("Segoe UI", 10, "bold")).grid(row=2, column=0, sticky="w", padx=5, pady=3)
-        tb.Label(info_grid, text=order[4], font=("Segoe UI", 10)).grid(row=2, column=1, sticky="w", padx=5)
+        # Row 3 - Device and IMEI
+        tb.Label(info_grid, text="Device:", font=("Segoe UI", 11, "bold")).grid(row=2, column=0, sticky="w", padx=(0, 10), pady=8)
+        tb.Label(info_grid, text=order[4], font=("Segoe UI", 11)).grid(row=2, column=1, sticky="w", padx=5, pady=8)
         
-        tb.Label(info_grid, text="IMEI:", font=("Segoe UI", 10, "bold")).grid(row=2, column=2, sticky="w", padx=5, pady=3)
-        tb.Label(info_grid, text=order[5] if len(order) > 5 else "N/A", font=("Segoe UI", 10)).grid(row=2, column=3, sticky="w", padx=5)
+        tb.Label(info_grid, text="IMEI:", font=("Segoe UI", 11, "bold")).grid(row=2, column=2, sticky="w", padx=(30, 10), pady=8)
+        tb.Label(info_grid, text=order[5] if len(order) > 5 else "N/A", font=("Segoe UI", 11)).grid(row=2, column=3, sticky="w", padx=5, pady=8)
 
         # Parts section with professional styling
-        parts_frame = tb.Labelframe(win, text="🔧 Parts & Services", padding=15, bootstyle="secondary")
-        parts_frame.pack(fill="both", expand=True, padx=15, pady=10)
+        parts_frame = tb.Labelframe(win, text="🔧 Parts & Services", padding=20, bootstyle="secondary")
+        parts_frame.pack(fill="both", expand=True, padx=20, pady=(0, 15))
         
-        # Parts table with better columns
+        # Parts table with better columns and styling
         cols = ("id", "name", "qty", "unit_price", "cost_price", "line_total", "profit")
-        pt = ttk.Treeview(parts_frame, columns=cols, show="headings", height=10)
+        pt = ttk.Treeview(parts_frame, columns=cols, show="headings", height=12)
         
-        # Configure columns with proper alignment
+        # Enhanced table styling
+        style = ttk.Style()
+        style.configure("Treeview", rowheight=35, font=("Segoe UI", 10))
+        style.configure("Treeview.Heading", font=("Segoe UI", 10, "bold"), padding=8)
+        
+        # Configure columns with proper alignment and better widths
         headers = {
             "id": "ID",
             "name": "Part/Service Name",
@@ -652,19 +664,27 @@ class RepairsFrame:
             "profit": "Profit"
         }
         
-        widths = {"id": 50, "name": 350, "qty": 70, "unit_price": 100, "cost_price": 100, "line_total": 120, "profit": 100}
-        anchors = {"id": "center", "name": "w", "qty": "center", "unit_price": "e", "cost_price": "e", "line_total": "e", "profit": "e"}
+        widths = {"id": 60, "name": 400, "qty": 80, "unit_price": 120, "cost_price": 120, "line_total": 140, "profit": 120}
+        anchors = {"id": "center", "name": "w", "qty": "center", "unit_price": "center", "cost_price": "center", "line_total": "center", "profit": "center"}
         
         for c in cols:
-            pt.heading(c, text=headers[c], anchor=anchors[c])
+            pt.heading(c, text=headers[c], anchor="center")  # All headers centered
             pt.column(c, width=widths[c], anchor=anchors[c])
         
-        pt.pack(fill="both", expand=True, pady=(0, 10))
+        # Table container with scrollbar
+        table_container = tb.Frame(parts_frame)
+        table_container.pack(fill="both", expand=True, pady=(0, 15))
+        
+        pt.pack(side="left", fill="both", expand=True)
         
         # Scrollbar
-        vsb = ttk.Scrollbar(parts_frame, orient="vertical", command=pt.yview)
+        vsb = ttk.Scrollbar(table_container, orient="vertical", command=pt.yview)
         vsb.pack(side="right", fill="y")
         pt.configure(yscrollcommand=vsb.set)
+        
+        # Move table to container
+        pt.pack_forget()
+        pt.pack(in_=table_container, side="left", fill="both", expand=True)
         
         # Function to refresh parts table and totals
         def refresh_parts_table():
@@ -741,56 +761,56 @@ class RepairsFrame:
             else:
                 lbl_total_profit.configure(bootstyle="secondary")
         
-        # Totals summary
+        # Enhanced Totals summary with better spacing
         totals_frame = tb.Frame(parts_frame)
-        totals_frame.pack(fill="x", pady=(10, 0))
+        totals_frame.pack(fill="x", pady=(15, 15))
         
         # Three columns for totals
         totals_frame.columnconfigure(0, weight=1)
         totals_frame.columnconfigure(1, weight=1)
         totals_frame.columnconfigure(2, weight=1)
         
-        # Total Cost
-        cost_card = tb.Frame(totals_frame, bootstyle="secondary", padding=10)
-        cost_card.grid(row=0, column=0, sticky="ew", padx=5)
-        tb.Label(cost_card, text="Total Cost", font=("Segoe UI", 10, "bold"), bootstyle="secondary-inverse").pack()
-        lbl_total_cost = tb.Label(cost_card, text="EGP 0.00", font=("Segoe UI", 14, "bold"), bootstyle="secondary-inverse")
-        lbl_total_cost.pack()
+        # Total Cost - Gray card
+        cost_card = tb.Frame(totals_frame, bootstyle="secondary", padding=15)
+        cost_card.grid(row=0, column=0, sticky="ew", padx=8)
+        tb.Label(cost_card, text="Total Cost", font=("Segoe UI", 11, "bold"), bootstyle="secondary-inverse").pack()
+        lbl_total_cost = tb.Label(cost_card, text="EGP 0.00", font=("Segoe UI", 16, "bold"), bootstyle="secondary-inverse")
+        lbl_total_cost.pack(pady=(5, 0))
         
-        # Total Revenue
-        revenue_card = tb.Frame(totals_frame, bootstyle="info", padding=10)
-        revenue_card.grid(row=0, column=1, sticky="ew", padx=5)
-        tb.Label(revenue_card, text="Total Revenue", font=("Segoe UI", 10, "bold"), bootstyle="info-inverse").pack()
-        lbl_total_revenue = tb.Label(revenue_card, text="EGP 0.00", font=("Segoe UI", 14, "bold"), bootstyle="info-inverse")
-        lbl_total_revenue.pack()
+        # Total Revenue - Purple card
+        revenue_card = tb.Frame(totals_frame, bootstyle="info", padding=15)
+        revenue_card.grid(row=0, column=1, sticky="ew", padx=8)
+        tb.Label(revenue_card, text="Total Revenue", font=("Segoe UI", 11, "bold"), bootstyle="info-inverse").pack()
+        lbl_total_revenue = tb.Label(revenue_card, text="EGP 0.00", font=("Segoe UI", 16, "bold"), bootstyle="info-inverse")
+        lbl_total_revenue.pack(pady=(5, 0))
         
-        # Total Profit
-        profit_card = tb.Frame(totals_frame, bootstyle="success", padding=10)
-        profit_card.grid(row=0, column=2, sticky="ew", padx=5)
-        tb.Label(profit_card, text="Total Profit", font=("Segoe UI", 10, "bold"), bootstyle="success-inverse").pack()
-        lbl_total_profit = tb.Label(profit_card, text="EGP 0.00", font=("Segoe UI", 14, "bold"), bootstyle="success-inverse")
-        lbl_total_profit.pack()
+        # Total Profit - Green card
+        profit_card = tb.Frame(totals_frame, bootstyle="success", padding=15)
+        profit_card.grid(row=0, column=2, sticky="ew", padx=8)
+        tb.Label(profit_card, text="Total Profit", font=("Segoe UI", 11, "bold"), bootstyle="success-inverse").pack()
+        lbl_total_profit = tb.Label(profit_card, text="EGP 0.00", font=("Segoe UI", 16, "bold"), bootstyle="success-inverse")
+        lbl_total_profit.pack(pady=(5, 0))
         
-        # Add part form
-        add_part_frame = tb.Labelframe(parts_frame, text="➕ Add Part/Service", padding=10)
-        add_part_frame.pack(fill="x", pady=(10, 0))
+        # Add part form with better layout
+        add_part_frame = tb.Labelframe(parts_frame, text="➕ Add Part/Service", padding=15)
+        add_part_frame.pack(fill="x", pady=(0, 0))
         
-        add_part_frame.columnconfigure(1, weight=2)
+        add_part_frame.columnconfigure(1, weight=3)
         add_part_frame.columnconfigure(3, weight=1)
         add_part_frame.columnconfigure(5, weight=1)
         
-        tb.Label(add_part_frame, text="Part Name:", font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        e_name = tb.Entry(add_part_frame, font=("Segoe UI", 10))
-        e_name.grid(row=0, column=1, sticky="ew", padx=5)
+        tb.Label(add_part_frame, text="Part Name:", font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w", padx=(0, 10), pady=8)
+        e_name = tb.Entry(add_part_frame, font=("Segoe UI", 11))
+        e_name.grid(row=0, column=1, sticky="ew", padx=5, pady=8)
         
-        tb.Label(add_part_frame, text="Qty:", font=("Segoe UI", 10)).grid(row=0, column=2, sticky="w", padx=5)
-        e_qty = tb.Entry(add_part_frame, font=("Segoe UI", 10), width=8)
-        e_qty.grid(row=0, column=3, sticky="ew", padx=5)
+        tb.Label(add_part_frame, text="Qty:", font=("Segoe UI", 10, "bold")).grid(row=0, column=2, sticky="w", padx=(15, 10), pady=8)
+        e_qty = tb.Entry(add_part_frame, font=("Segoe UI", 11), width=10)
+        e_qty.grid(row=0, column=3, sticky="ew", padx=5, pady=8)
         e_qty.insert(0, "1")
         
-        tb.Label(add_part_frame, text="Unit Price:", font=("Segoe UI", 10)).grid(row=0, column=4, sticky="w", padx=5)
-        e_price = tb.Entry(add_part_frame, font=("Segoe UI", 10), width=12)
-        e_price.grid(row=0, column=5, sticky="ew", padx=5)
+        tb.Label(add_part_frame, text="Unit Price:", font=("Segoe UI", 10, "bold")).grid(row=0, column=4, sticky="w", padx=(15, 10), pady=8)
+        e_price = tb.Entry(add_part_frame, font=("Segoe UI", 11), width=15)
+        e_price.grid(row=0, column=5, sticky="ew", padx=5, pady=8)
         
         # Cost display (auto-fetched)
         cost_info = tb.Label(add_part_frame, text="", font=("Segoe UI", 9, "italic"), foreground="#6c757d")
