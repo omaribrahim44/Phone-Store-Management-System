@@ -141,19 +141,46 @@ class RepairsFrame:
                        padding=10,
                        background="#E8E8E8")
         
-        # headings with better labels
+        # Enhanced professional styling for table
+        style = ttk.Style()
+        style.configure("Treeview",
+                       rowheight=38,  # Larger rows for better readability
+                       font=("Segoe UI", 11),
+                       background="#FFFFFF",
+                       fieldbackground="#FFFFFF",
+                       borderwidth=0)
+        style.configure("Treeview.Heading",
+                       font=("Segoe UI", 11, "bold"),
+                       background="#2C5282",
+                       foreground="white",
+                       borderwidth=1,
+                       relief="flat",
+                       padding=10)
+        style.map("Treeview.Heading",
+                 background=[("active", "#1A365D")])
+        style.map("Treeview",
+                 background=[("selected", "#4299E1")],
+                 foreground=[("selected", "white")])
+        
+        # headings with better labels and icons
         labels = {
-            "id":"ID", "order":"ORDER #", "customer":"CUSTOMER", "phone":"PHONE",
-            "model":"MODEL", "imei":"IMEI", "status":"STATUS", "received":"RECEIVED"
+            "id":"🆔 ID", 
+            "order":"📋 ORDER #", 
+            "customer":"👤 CUSTOMER", 
+            "phone":"📞 PHONE",
+            "model":"📱 MODEL", 
+            "imei":"🔢 IMEI", 
+            "status":"📊 STATUS", 
+            "received":"📅 RECEIVED"
         }
         # Proper widths and alignment for better readability
-        widths = {"id":60, "order":130, "customer":220, "phone":130, "model":180, "imei":140, "status":130, "received":160}
+        widths = {"id":70, "order":140, "customer":220, "phone":140, "model":190, "imei":150, "status":140, "received":170}
         # Center alignment for ID, Order #, Status - Left for text fields
         anchors = {"id":"center", "order":"center", "customer":"w", "phone":"center", "model":"w", "imei":"center", "status":"center", "received":"center"}
         
         for c in cols:
             # Headers match data alignment for proper column alignment
-            self.tree.heading(c, text=labels.get(c, c), anchor=anchors.get(c, "w"))
+            self.tree.heading(c, text=labels.get(c, c), anchor="center")  # All headers centered
             self.tree.column(c, width=widths.get(c,100), anchor=anchors.get(c, "w"))
         self.tree.grid(row=3, column=0, sticky="nsew", padx=0, pady=(0,6))
 
@@ -166,12 +193,24 @@ class RepairsFrame:
         self.tree.bind("<Double-1>", lambda e: self._on_double_click())
         self._create_context_menu()
         
-        # Configure tags
-        for status, bootstyle in self.STATUS_TAGS.items():
-            self.tree.tag_configure(status, foreground=None) # default
+        # Configure enhanced status tags with background colors
+        status_colors = {
+            "Received": {"bg": "#FFF5F5", "fg": "#C53030"},      # Light red bg, dark red text
+            "InProgress": {"bg": "#FFFAF0", "fg": "#DD6B20"},    # Light orange bg, dark orange text
+            "Completed": {"bg": "#F0FFF4", "fg": "#2F855A"},     # Light green bg, dark green text
+            "Delivered": {"bg": "#EBF8FF", "fg": "#2C5282"},     # Light blue bg, dark blue text
+            "Cancelled": {"bg": "#F7FAFC", "fg": "#718096"}      # Light gray bg, gray text
+        }
         
-        # Overdue tag (red text)
-        self.tree.tag_configure("overdue", foreground="red")
+        for status, colors in status_colors.items():
+            self.tree.tag_configure(status, background=colors["bg"], foreground=colors["fg"])
+        
+        # Alternating row colors for better readability
+        self.tree.tag_configure("evenrow", background="#FFFFFF")
+        self.tree.tag_configure("oddrow", background="#F8F9FA")
+        
+        # Overdue tag (red background with white text)
+        self.tree.tag_configure("overdue", background="#FEB2B2", foreground="#742A2A", font=("Segoe UI", 11, "bold"))
 
         # Footer actions
         footer = tb.Frame(self.frame); footer.grid(row=4, column=0, sticky="ew", pady=(6,0))
@@ -257,6 +296,7 @@ class RepairsFrame:
         for r in self.tree.get_children():
             self.tree.delete(r)
 
+        row_index = 0  # Track row index for alternating colors
         for row in rows:
             # row: id, order, cust, phone, model, imei, status, received, estimated
             display_row = list(row)
@@ -272,7 +312,7 @@ class RepairsFrame:
             # Tree cols: id, order, customer, phone, model, imei, status, received
             # We map row indices: 0, 1, 2, 3, 4, 5, 6, 7
             
-            # Format date
+            # Format date with better styling
             raw_date = display_row[7]
             formatted_date = raw_date
             try:
@@ -281,25 +321,44 @@ class RepairsFrame:
                     formatted_date = dt.strftime("%Y-%m-%d %H:%M")
             except: pass
             
+            # Format status with emoji indicators
+            status = display_row[6]
+            status_icons = {
+                "Received": "🔴 Received",
+                "InProgress": "🟡 In Progress",
+                "Completed": "🟢 Completed",
+                "Delivered": "🔵 Delivered",
+                "Cancelled": "⚫ Cancelled"
+            }
+            status_display = status_icons.get(status, status)
+            
             values = (display_row[0], display_row[1], display_row[2], display_row[3], 
-                      display_row[4], display_row[5], display_row[6], formatted_date)
+                      display_row[4], display_row[5], status_display, formatted_date)
             
             iid = self.tree.insert("", "end", values=values)
             
-            # Tag logic
+            # Enhanced tag logic with priority
             tags = []
-            stat = display_row[6]
-            if stat in self.STATUS_TAGS:
-                tags.append(stat)
             
-            # Overdue check
-            if stat not in ('Completed', 'Delivered', 'Cancelled'):
+            # Overdue check (highest priority - overrides status colors)
+            if status not in ('Completed', 'Delivered', 'Cancelled'):
                 est = display_row[8] if len(display_row) > 8 else None
                 if est and est < today:
                     tags.append("overdue")
             
+            # Status color (if not overdue)
+            if not tags and status in self.STATUS_TAGS:
+                tags.append(status)
+            
+            # Alternating row color (lowest priority)
+            if not tags:
+                row_color = "evenrow" if row_index % 2 == 0 else "oddrow"
+                tags.append(row_color)
+            
             if tags:
                 self.tree.item(iid, tags=tuple(tags))
+            
+            row_index += 1
         
         # Notify that repairs were refreshed (for synchronization)
         from modules.event_manager import event_manager
