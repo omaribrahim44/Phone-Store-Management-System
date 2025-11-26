@@ -45,7 +45,7 @@ class SalesFrame:
         filter_frame.grid(row=2, column=0, sticky="ew", pady=(0, 10))
         
         tb.Label(filter_frame, text="Category:", font=("Segoe UI", 10)).pack(side="left", padx=(0, 10))
-        self.category_filter = tb.Combobox(filter_frame, values=["All", "Mobile", "Covers", "Charger", "AirPods", "Accessories", "Parts", "Other"], state="readonly", width=15, font=("Segoe UI", 10))
+        self.category_filter = tb.Combobox(filter_frame, values=["All", "Mobile Phones", "Phone Cases & Covers", "Chargers & Cables", "AirPods & Earphones", "Screen Protectors", "Phone Accessories", "Repair Parts", "Other"], state="readonly", width=20, font=("Segoe UI", 10))
         self.category_filter.set("All")
         self.category_filter.pack(side="left")
         self.category_filter.bind("<<ComboboxSelected>>", self.filter_inventory)
