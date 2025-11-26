@@ -160,32 +160,46 @@ class SalesFrame:
         self.lbl_profit = tb.Label(profit_card, text="EGP 0", font=("Segoe UI", 12, "bold"), bootstyle="secondary-inverse")
         self.lbl_profit.pack()
         
-        # Cart table - LARGER AND MORE COMFORTABLE
-        cart_frame = tb.Labelframe(right_panel, text="🛒 Cart Items", padding=12, bootstyle="primary")
+        # Cart table - ENLARGED AND HIGHLY VISUAL
+        cart_frame = tb.Labelframe(right_panel, text="🛒 Cart Items", padding=15, bootstyle="primary")
         cart_frame.grid(row=3, column=0, sticky="nsew", pady=(0, 10))
         cart_frame.columnconfigure(0, weight=1)
         cart_frame.rowconfigure(0, weight=1)
         
         c_cols = ("sku", "name", "qty", "stock", "price", "total")
-        self.cart_tree = ttk.Treeview(cart_frame, columns=c_cols, show="headings", height=24)  # LARGER HEIGHT
-        self.cart_tree.heading("sku", text="SKU", anchor="w")
-        self.cart_tree.heading("name", text="Product Name", anchor="w")
+        self.cart_tree = ttk.Treeview(cart_frame, columns=c_cols, show="headings", height=18)  # Optimized height
+        
+        # Center-align all headers for consistency
+        self.cart_tree.heading("sku", text="SKU", anchor="center")
+        self.cart_tree.heading("name", text="Product Name", anchor="center")
         self.cart_tree.heading("qty", text="Qty", anchor="center")
         self.cart_tree.heading("stock", text="Available", anchor="center")
-        self.cart_tree.heading("price", text="Unit Price", anchor="e")
-        self.cart_tree.heading("total", text="Line Total", anchor="e")
+        self.cart_tree.heading("price", text="Unit Price", anchor="center")
+        self.cart_tree.heading("total", text="Line Total", anchor="center")
         
-        self.cart_tree.column("sku", width=130, anchor="w")
-        self.cart_tree.column("name", width=280, anchor="w")
-        self.cart_tree.column("qty", width=80, anchor="center")
-        self.cart_tree.column("stock", width=100, anchor="center")
-        self.cart_tree.column("price", width=110, anchor="e")
-        self.cart_tree.column("total", width=130, anchor="e")
+        # Center-align all columns with wider spacing
+        self.cart_tree.column("sku", width=140, anchor="center", minwidth=120)
+        self.cart_tree.column("name", width=300, anchor="center", minwidth=250)
+        self.cart_tree.column("qty", width=90, anchor="center", minwidth=80)
+        self.cart_tree.column("stock", width=120, anchor="center", minwidth=100)
+        self.cart_tree.column("price", width=130, anchor="center", minwidth=110)
+        self.cart_tree.column("total", width=150, anchor="center", minwidth=130)
         
-        # Enhanced style for cart tree - MORE COMFORTABLE
+        # Enhanced style for cart tree - MUCH MORE COMFORTABLE AND VISUAL
         style = ttk.Style()
-        style.configure("Treeview", rowheight=35, font=("Segoe UI", 12))
-        style.configure("Treeview.Heading", font=("Segoe UI", 12, "bold"), padding=8)
+        style.configure("Treeview", 
+                       rowheight=42,  # Increased from 35 to 42 for better spacing
+                       font=("Segoe UI", 13),  # Larger font
+                       background="#FFFFFF",
+                       fieldbackground="#FFFFFF")
+        style.configure("Treeview.Heading", 
+                       font=("Segoe UI", 13, "bold"),  # Larger header font
+                       padding=12)  # More padding
+        style.map("Treeview", background=[("selected", "#0078D7")])
+        
+        # Add alternating row colors for better readability
+        self.cart_tree.tag_configure('oddrow', background='#F8F9FA')
+        self.cart_tree.tag_configure('evenrow', background='#FFFFFF')
         
         self.cart_tree.grid(row=0, column=0, sticky="nsew")
         
@@ -538,8 +552,8 @@ class SalesFrame:
         total_qty = 0
         total_cost = 0.0
         
-        # Add items to cart tree with available stock info
-        for item in self.cart:
+        # Add items to cart tree with available stock info and alternating colors
+        for idx, item in enumerate(self.cart):
             line_total = item['qty'] * item['price']
             line_cost = item['qty'] * item['cost']
             subtotal += line_total
@@ -555,11 +569,14 @@ class SalesFrame:
                 item['name'], 
                 item['qty'], 
                 stock_display,
-                f"EGP {item['price']:.2f}", 
-                f"EGP {line_total:.2f}"
+                f"{item['price']:.2f}",  # Removed EGP prefix for cleaner look
+                f"{line_total:.2f}"  # Removed EGP prefix for cleaner look
             )
+            
+            # Alternate row colors for better visual separation
+            tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
             print(f"DEBUG: Inserting cart item: {values}")
-            self.cart_tree.insert("", "end", values=values)
+            self.cart_tree.insert("", "end", values=values, tags=(tag,))
         
         print(f"DEBUG: Cart tree now has {len(self.cart_tree.get_children())} rows")
         
