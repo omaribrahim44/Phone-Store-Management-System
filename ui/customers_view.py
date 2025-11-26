@@ -150,13 +150,13 @@ class CustomersFrame:
         alignments = {
             "icon": "center",
             "id": "center",
-            "name": "w",
+            "name": "center",
             "phone": "center",
-            "email": "w",
+            "email": "center",
             "type": "center",
             "purchases": "center",
             "repairs": "center",
-            "spent": "e",
+            "spent": "center",
             "last_activity": "center"
         }
 
