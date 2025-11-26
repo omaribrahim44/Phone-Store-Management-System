@@ -724,17 +724,23 @@ class SalesFrame:
     
     def show_sale_success_dialog(self, sale_data, receipt_items):
         """Show professional success dialog with detailed information and print receipt button"""
-        # Create success dialog
+        # Create success dialog - MAXIMIZE HEIGHT
         dialog = tb.Toplevel(self.frame)
         dialog.title("✓ Sale Completed Successfully")
-        dialog.geometry("900x750")
+        
+        # Get screen height and make dialog 90% of screen height
+        screen_height = dialog.winfo_screenheight()
+        dialog_height = int(screen_height * 0.9)
+        dialog_width = 900
+        
+        dialog.geometry(f"{dialog_width}x{dialog_height}")
         dialog.resizable(True, True)
         
         # Center dialog
         dialog.update_idletasks()
-        x = (dialog.winfo_screenwidth() // 2) - (900 // 2)
-        y = (dialog.winfo_screenheight() // 2) - (750 // 2)
-        dialog.geometry(f"900x750+{x}+{y}")
+        x = (dialog.winfo_screenwidth() // 2) - (dialog_width // 2)
+        y = (dialog.winfo_screenheight() // 2) - (dialog_height // 2)
+        dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
         
         # Make dialog modal
         dialog.transient(self.frame)
@@ -758,32 +764,37 @@ class SalesFrame:
         def close_dialog():
             dialog.destroy()
         
-        # Success header - More prominent
-        header = tb.Frame(dialog, bootstyle="success", padding=25)
+        # Success header - COMPACT
+        header = tb.Frame(dialog, bootstyle="success", padding=15)
         header.pack(fill="x")
         
-        # Success icon and message
-        icon_label = tb.Label(
-            header,
+        # Success icon and message - SMALLER
+        header_content = tb.Frame(header, bootstyle="success")
+        header_content.pack()
+        
+        tb.Label(
+            header_content,
             text="✓",
-            font=("Segoe UI", 72, "bold"),  # Larger checkmark
+            font=("Segoe UI", 40, "bold"),
             bootstyle="success-inverse"
-        )
-        icon_label.pack()
+        ).pack(side="left", padx=(0, 15))
+        
+        header_text = tb.Frame(header_content, bootstyle="success")
+        header_text.pack(side="left")
         
         tb.Label(
-            header,
+            header_text,
             text="Sale Completed Successfully!",
-            font=("Segoe UI", 22, "bold"),  # Larger text
+            font=("Segoe UI", 18, "bold"),
             bootstyle="success-inverse"
-        ).pack(pady=(15, 5))
+        ).pack(anchor="w")
         
         tb.Label(
-            header,
-            text="Transaction has been recorded in the system",
-            font=("Segoe UI", 11),
+            header_text,
+            text="Transaction recorded in the system",
+            font=("Segoe UI", 10),
             bootstyle="success-inverse"
-        ).pack()
+        ).pack(anchor="w")
         
         # Scrollable content area - BETWEEN header and buttons
         content_container = tb.Frame(dialog)
