@@ -556,26 +556,69 @@ class InventoryFrame:
             entry.insert(0, entry.placeholder)
             entry.config(foreground=entry.placeholder_color)
         
-        # Barcode Scanner Field (at the top for easy scanning)
-        barcode_frame = tb.Labelframe(form_container, text="📷 Barcode Scanner", padding=15, bootstyle="info")
-        barcode_frame.pack(fill="x", pady=(0, 20))
+        # Enhanced Barcode Scanner Field (at the top for easy scanning)
+        barcode_frame = tb.Labelframe(form_container, text="📷 Barcode Scanner", padding=20, bootstyle="info")
+        barcode_frame.pack(fill="x", pady=(0, 25))
+        
+        # Instructions with icon
+        instruction_frame = tb.Frame(barcode_frame)
+        instruction_frame.pack(fill="x", pady=(0, 12))
         
         tb.Label(
-            barcode_frame, 
-            text="Scan barcode with your scanner device (it will auto-fill SKU)",
-            font=("Segoe UI", 10, "italic"),
-            foreground="#6c757d"
-        ).pack(anchor="w", pady=(0, 8))
+            instruction_frame, 
+            text="🔍", 
+            font=("Segoe UI", 20)
+        ).pack(side="left", padx=(0, 10))
         
-        barcode_entry = tb.Entry(barcode_frame, font=("Segoe UI", 12))
-        barcode_entry.pack(fill="x")
+        instruction_text = tb.Frame(instruction_frame)
+        instruction_text.pack(side="left", fill="x", expand=True)
+        
+        tb.Label(
+            instruction_text, 
+            text="Scan barcode with your scanner device",
+            font=("Segoe UI", 11, "bold"),
+            foreground="#2C5282"
+        ).pack(anchor="w")
+        
+        tb.Label(
+            instruction_text, 
+            text="The scanned code will automatically fill the SKU field below",
+            font=("Segoe UI", 9, "italic"),
+            foreground="#6c757d"
+        ).pack(anchor="w")
+        
+        # Barcode input with enhanced styling
+        barcode_input_frame = tb.Frame(barcode_frame)
+        barcode_input_frame.pack(fill="x")
+        
+        tb.Label(
+            barcode_input_frame, 
+            text="Scan Here:", 
+            font=("Segoe UI", 11, "bold")
+        ).pack(side="left", padx=(0, 10))
+        
+        barcode_entry = tb.Entry(
+            barcode_input_frame, 
+            font=("Segoe UI", 14, "bold"),
+            bootstyle="info"
+        )
+        barcode_entry.pack(side="left", fill="x", expand=True)
         barcode_entry.focus()  # Auto-focus for immediate scanning
+        
+        # Status indicator
+        scan_status = tb.Label(
+            barcode_frame, 
+            text="⏳ Ready to scan...", 
+            font=("Segoe UI", 9, "italic"),
+            foreground="#6c757d"
+        )
+        scan_status.pack(anchor="w", pady=(8, 0))
         
         # Form fields with placeholders
         e_sku = create_field(form_container, "SKU (Stock Keeping Unit)", is_required=True)
-        add_placeholder(e_sku, "e.g., IP14-BLK-128")
+        add_placeholder(e_sku, "e.g., IP14-BLK-128 or scan barcode above")
         
-        # Barcode scan handler - when Enter is pressed, copy to SKU
+        # Enhanced barcode scan handler - when Enter is pressed, copy to SKU
         def on_barcode_scan(event):
             scanned_code = barcode_entry.get().strip()
             if scanned_code:
@@ -590,14 +633,32 @@ class InventoryFrame:
                 # Set the scanned barcode as SKU
                 e_sku.insert(0, scanned_code)
                 
-                # Clear barcode field
-                barcode_entry.delete(0, 'end')
-                
-                # Move focus to name field
-                e_name.focus()
-                
                 # Show success feedback
                 barcode_entry.config(bootstyle="success")
+                scan_status.configure(
+                    text=f"✅ Scanned: {scanned_code}", 
+                    foreground="#28a745",
+                    font=("Segoe UI", 10, "bold")
+                )
+                
+                # Clear barcode field after a short delay
+                def clear_and_reset():
+                    barcode_entry.delete(0, 'end')
+                    barcode_entry.config(bootstyle="info")
+                    scan_status.configure(
+                        text="⏳ Ready to scan...", 
+                        foreground="#6c757d",
+                        font=("Segoe UI", 9, "italic")
+                    )
+                    # Move focus to name field
+                    try:
+                        e_name.focus()
+                    except:
+                        pass
+                
+                win.after(800, clear_and_reset)  # Clear after 800ms
+                
+                return "break"  # Prevent default Enter behavior
                 win.after(500, lambda: barcode_entry.config(bootstyle=""))
         
         barcode_entry.bind("<Return>", on_barcode_scan)
