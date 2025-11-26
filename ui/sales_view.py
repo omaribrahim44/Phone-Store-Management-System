@@ -674,9 +674,22 @@ class SalesFrame:
                 discount_amount = (subtotal * discount_pct) / 100
                 grand_total = subtotal - discount_amount
                 
-                # Store sale data for receipt
-                receipt_items = [(i['name'], i['qty'], i['price'], i['qty']*i['price']) for i in self.cart]
-                sale_data = (sale_id, datetime.now().isoformat()[:16], cust_name, subtotal, discount_amount, grand_total)
+                # Store sale data for receipt with MORE details
+                receipt_items = [(i['sku'], i['name'], i['qty'], i['price'], i['qty']*i['price']) for i in self.cart]
+                sale_data = {
+                    'sale_id': sale_id,
+                    'date_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    'customer_name': cust_name,
+                    'customer_phone': cust_phone,
+                    'customer_email': cust_email,
+                    'customer_address': cust_address,
+                    'subtotal': subtotal,
+                    'discount_percent': discount_pct,
+                    'discount_amount': discount_amount,
+                    'grand_total': grand_total,
+                    'payment_method': payment_method,
+                    'notes': notes
+                }
                 
                 # Reset cart and form BEFORE showing success dialog
                 cart_copy = self.cart.copy()
@@ -699,7 +712,7 @@ class SalesFrame:
                 self.refresh_inventory()
                 
                 # Show success dialog with print button
-                self.show_sale_success_dialog(sale_id, sale_data, receipt_items, cust_name, grand_total)
+                self.show_sale_success_dialog(sale_data, receipt_items)
                 
                 # Notify ALL views that sale completed
                 from modules.event_manager import event_manager
@@ -709,20 +722,20 @@ class SalesFrame:
         except Exception as e:
             messagebox.showerror("Error", str(e))
     
-    def show_sale_success_dialog(self, sale_id, sale_data, receipt_items, customer_name, total):
-        """Show professional success dialog with print receipt button"""
-        # Create success dialog
+    def show_sale_success_dialog(self, sale_data, receipt_items):
+        """Show professional success dialog with detailed information and print receipt button"""
+        # Create success dialog - LARGER
         dialog = tb.Toplevel(self.frame)
         dialog.title("Sale Completed Successfully")
-        dialog.geometry("650x550")  # Increased size for better visibility
+        dialog.geometry("800x700")  # Larger size for more details
         dialog.resizable(True, True)
-        dialog.minsize(600, 500)
+        dialog.minsize(750, 650)
         
         # Center dialog
         dialog.update_idletasks()
-        x = (dialog.winfo_screenwidth() // 2) - (650 // 2)
-        y = (dialog.winfo_screenheight() // 2) - (550 // 2)
-        dialog.geometry(f"650x550+{x}+{y}")
+        x = (dialog.winfo_screenwidth() // 2) - (800 // 2)
+        y = (dialog.winfo_screenheight() // 2) - (700 // 2)
+        dialog.geometry(f"800x700+{x}+{y}")
         
         # Make dialog modal
         dialog.transient(self.frame)
@@ -817,15 +830,16 @@ class SalesFrame:
             padding=20,
             bootstyle="info"
         )
-        info_frame.pack(fill="x", pady=(0, 20))
+        info_frame.pack(fill="x", pady=(0, 15))
         
         info_grid = tb.Frame(info_frame)
         info_grid.pack(fill="x")
         info_grid.columnconfigure(1, weight=1)
+        info_grid.columnconfigure(3, weight=1)
         
         # Sale ID with styling
         id_frame = tb.Frame(info_grid)
-        id_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 15))
+        id_frame.grid(row=0, column=0, columnspan=4, sticky="ew", pady=(0, 12))
         
         tb.Label(
             id_frame,
@@ -835,96 +849,137 @@ class SalesFrame:
         
         tb.Label(
             id_frame,
-            text=f"#{sale_id}",
+            text=f"#{sale_data['sale_id']}",
             font=("Segoe UI", 20, "bold"),
             bootstyle="info"
         ).pack(side="left", padx=(10, 0))
         
-        ttk.Separator(info_grid, orient="horizontal").grid(row=1, column=0, columnspan=2, sticky="ew", pady=15)
+        ttk.Separator(info_grid, orient="horizontal").grid(row=1, column=0, columnspan=4, sticky="ew", pady=12)
         
-        # Customer
-        tb.Label(
-            info_grid,
-            text="👤 Customer:",
-            font=("Segoe UI", 12, "bold")
-        ).grid(row=2, column=0, sticky="w", pady=8)
+        # Row 1: Date/Time and Payment Method
+        tb.Label(info_grid, text="📅 Date/Time:", font=("Segoe UI", 11, "bold")).grid(row=2, column=0, sticky="w", pady=6)
+        tb.Label(info_grid, text=sale_data['date_time'], font=("Segoe UI", 11)).grid(row=2, column=1, sticky="w", padx=(10, 20), pady=6)
         
-        tb.Label(
-            info_grid,
-            text=customer_name,
-            font=("Segoe UI", 12)
-        ).grid(row=2, column=1, sticky="w", padx=(15, 0), pady=8)
+        tb.Label(info_grid, text="💳 Payment:", font=("Segoe UI", 11, "bold")).grid(row=2, column=2, sticky="w", pady=6)
+        tb.Label(info_grid, text=sale_data['payment_method'], font=("Segoe UI", 11)).grid(row=2, column=3, sticky="w", padx=(10, 0), pady=6)
         
-        # Total Amount - Highlighted
-        tb.Label(
-            info_grid,
-            text="💰 Total Amount:",
-            font=("Segoe UI", 12, "bold")
-        ).grid(row=3, column=0, sticky="w", pady=8)
-        
-        tb.Label(
-            info_grid,
-            text=f"EGP {total:,.2f}",
-            font=("Segoe UI", 18, "bold"),
-            bootstyle="success"
-        ).grid(row=3, column=1, sticky="w", padx=(15, 0), pady=8)
-        
-        # Date/Time
-        tb.Label(
-            info_grid,
-            text="📅 Date/Time:",
-            font=("Segoe UI", 12, "bold")
-        ).grid(row=4, column=0, sticky="w", pady=8)
-        
-        tb.Label(
-            info_grid,
-            text=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            font=("Segoe UI", 12)
-        ).grid(row=4, column=1, sticky="w", padx=(15, 0), pady=8)
-        
-        # Items summary card
-        items_frame = tb.Labelframe(
+        # Customer Details Card
+        cust_frame = tb.Labelframe(
             details_frame,
-            text="  📦 Items Summary  ",
+            text="  👤 Customer Details  ",
             padding=20,
+            bootstyle="primary"
+        )
+        cust_frame.pack(fill="x", pady=(0, 15))
+        
+        cust_grid = tb.Frame(cust_frame)
+        cust_grid.pack(fill="x")
+        cust_grid.columnconfigure(1, weight=1)
+        cust_grid.columnconfigure(3, weight=1)
+        
+        # Customer Name
+        tb.Label(cust_grid, text="Name:", font=("Segoe UI", 11, "bold")).grid(row=0, column=0, sticky="w", pady=6)
+        tb.Label(cust_grid, text=sale_data['customer_name'], font=("Segoe UI", 12, "bold"), bootstyle="primary").grid(row=0, column=1, sticky="w", padx=(10, 20), pady=6)
+        
+        # Phone
+        tb.Label(cust_grid, text="Phone:", font=("Segoe UI", 11, "bold")).grid(row=0, column=2, sticky="w", pady=6)
+        tb.Label(cust_grid, text=sale_data['customer_phone'] or "N/A", font=("Segoe UI", 11)).grid(row=0, column=3, sticky="w", padx=(10, 0), pady=6)
+        
+        # Email
+        if sale_data['customer_email']:
+            tb.Label(cust_grid, text="Email:", font=("Segoe UI", 11, "bold")).grid(row=1, column=0, sticky="w", pady=6)
+            tb.Label(cust_grid, text=sale_data['customer_email'], font=("Segoe UI", 11)).grid(row=1, column=1, columnspan=3, sticky="w", padx=(10, 0), pady=6)
+        
+        # Address
+        if sale_data['customer_address']:
+            tb.Label(cust_grid, text="Address:", font=("Segoe UI", 11, "bold")).grid(row=2, column=0, sticky="w", pady=6)
+            tb.Label(cust_grid, text=sale_data['customer_address'], font=("Segoe UI", 11), wraplength=600).grid(row=2, column=1, columnspan=3, sticky="w", padx=(10, 0), pady=6)
+        
+        # Products Purchased - Detailed Table
+        products_frame = tb.Labelframe(
+            details_frame,
+            text="  📦 Products Purchased  ",
+            padding=15,
             bootstyle="secondary"
         )
-        items_frame.pack(fill="x", pady=(0, 20))
+        products_frame.pack(fill="both", expand=True, pady=(0, 15))
         
-        items_summary = tb.Frame(items_frame)
-        items_summary.pack(fill="x")
-        items_summary.columnconfigure(0, weight=1)
-        items_summary.columnconfigure(1, weight=1)
-        items_summary.columnconfigure(2, weight=1)
+        # Create table for products
+        prod_cols = ("sku", "name", "qty", "price", "total")
+        prod_tree = ttk.Treeview(products_frame, columns=prod_cols, show="headings", height=8)
         
-        # Total items
+        # Configure headers
+        prod_tree.heading("sku", text="SKU", anchor="center")
+        prod_tree.heading("name", text="Product Name", anchor="center")
+        prod_tree.heading("qty", text="Qty", anchor="center")
+        prod_tree.heading("price", text="Unit Price", anchor="center")
+        prod_tree.heading("total", text="Total", anchor="center")
+        
+        # Configure columns
+        prod_tree.column("sku", width=120, anchor="center")
+        prod_tree.column("name", width=250, anchor="center")
+        prod_tree.column("qty", width=80, anchor="center")
+        prod_tree.column("price", width=120, anchor="center")
+        prod_tree.column("total", width=120, anchor="center")
+        
+        # Add products
+        for idx, item in enumerate(receipt_items):
+            # item: (sku, name, qty, price, total)
+            tag = 'evenrow' if idx % 2 == 0 else 'oddrow'
+            prod_tree.insert("", "end", values=(
+                item[0],  # SKU
+                item[1],  # Name
+                item[2],  # Qty
+                f"{item[3]:,.2f}",  # Price
+                f"{item[4]:,.2f}"  # Total
+            ), tags=(tag,))
+        
+        prod_tree.tag_configure('evenrow', background='#FFFFFF')
+        prod_tree.tag_configure('oddrow', background='#F8F9FA')
+        
+        prod_tree.pack(fill="both", expand=True)
+        
+        # Scrollbar for products
+        prod_scroll = ttk.Scrollbar(products_frame, orient="vertical", command=prod_tree.yview)
+        prod_scroll.pack(side="right", fill="y")
+        prod_tree.configure(yscrollcommand=prod_scroll.set)
+        
+        # Financial Summary Card
+        summary_frame = tb.Labelframe(
+            details_frame,
+            text="  💰 Financial Summary  ",
+            padding=20,
+            bootstyle="success"
+        )
+        summary_frame.pack(fill="x", pady=(0, 15))
+        
+        summary_grid = tb.Frame(summary_frame)
+        summary_grid.pack(fill="x")
+        summary_grid.columnconfigure(1, weight=1)
+        
+        # Subtotal
+        tb.Label(summary_grid, text="Subtotal:", font=("Segoe UI", 12)).grid(row=0, column=0, sticky="w", pady=5)
+        tb.Label(summary_grid, text=f"EGP {sale_data['subtotal']:,.2f}", font=("Segoe UI", 12)).grid(row=0, column=1, sticky="e", pady=5)
+        
+        # Discount
+        if sale_data['discount_percent'] > 0:
+            tb.Label(summary_grid, text=f"Discount ({sale_data['discount_percent']}%):", font=("Segoe UI", 12)).grid(row=1, column=0, sticky="w", pady=5)
+            tb.Label(summary_grid, text=f"- EGP {sale_data['discount_amount']:,.2f}", font=("Segoe UI", 12), bootstyle="danger").grid(row=1, column=1, sticky="e", pady=5)
+        
+        ttk.Separator(summary_grid, orient="horizontal").grid(row=2, column=0, columnspan=2, sticky="ew", pady=10)
+        
+        # Grand Total
+        tb.Label(summary_grid, text="TOTAL:", font=("Segoe UI", 16, "bold")).grid(row=3, column=0, sticky="w", pady=5)
+        tb.Label(summary_grid, text=f"EGP {sale_data['grand_total']:,.2f}", font=("Segoe UI", 20, "bold"), bootstyle="success").grid(row=3, column=1, sticky="e", pady=5)
+        
+        # Items count
+        total_qty = sum(item[2] for item in receipt_items)
         tb.Label(
-            items_summary,
-            text="Total Items:",
-            font=("Segoe UI", 11, "bold")
-        ).grid(row=0, column=0, sticky="w", pady=5)
-        
-        tb.Label(
-            items_summary,
-            text=str(len(receipt_items)),
-            font=("Segoe UI", 14, "bold"),
-            bootstyle="info"
-        ).grid(row=1, column=0, sticky="w")
-        
-        # Total quantity
-        total_qty = sum(item[1] for item in receipt_items)
-        tb.Label(
-            items_summary,
-            text="Total Quantity:",
-            font=("Segoe UI", 11, "bold")
-        ).grid(row=0, column=1, sticky="w", pady=5, padx=(20, 0))
-        
-        tb.Label(
-            items_summary,
-            text=str(total_qty),
-            font=("Segoe UI", 14, "bold"),
-            bootstyle="warning"
-        ).grid(row=1, column=1, sticky="w", padx=(20, 0))
+            summary_frame,
+            text=f"Total Items: {len(receipt_items)} | Total Quantity: {total_qty}",
+            font=("Segoe UI", 10, "italic"),
+            foreground="#6c757d"
+        ).pack(pady=(10, 0))
         
         # Buttons frame - Fixed at bottom
         buttons_container = tb.Frame(dialog, padding=20)
@@ -936,23 +991,34 @@ class SalesFrame:
         def print_receipt():
             """Generate and print receipt"""
             try:
-                from modules.reports.receipt_generator import generate_sales_receipt_pdf
-                
-                pdf_path = generate_sales_receipt_pdf(sale_data, receipt_items)
-                
-                # Open PDF
+                # Try to import receipt generator
                 try:
-                    os.startfile(pdf_path)
+                    from modules.reports.receipt_generator import generate_sales_receipt_pdf
+                    pdf_path = generate_sales_receipt_pdf(sale_data, receipt_items)
+                    
+                    # Open PDF
+                    try:
+                        os.startfile(pdf_path)
+                        messagebox.showinfo(
+                            "Receipt Generated", 
+                            f"✓ Receipt opened successfully!\n\nSaved to:\n{pdf_path}"
+                        )
+                    except:
+                        messagebox.showinfo(
+                            "Receipt Saved", 
+                            f"✓ Receipt saved successfully!\n\nLocation:\n{pdf_path}\n\nPlease open it manually."
+                        )
+                except ImportError:
+                    # Fallback: Simple text receipt
                     messagebox.showinfo(
-                        "Receipt Generated", 
-                        f"✓ Receipt opened successfully!\n\nSaved to:\n{pdf_path}"
+                        "Print Receipt",
+                        f"Receipt for Sale #{sale_data['sale_id']}\n\n"
+                        f"Customer: {sale_data['customer_name']}\n"
+                        f"Date: {sale_data['date_time']}\n"
+                        f"Total: EGP {sale_data['grand_total']:,.2f}\n\n"
+                        f"Receipt generator module not found.\n"
+                        f"Please install receipt generator for PDF receipts."
                     )
-                except Exception as e:
-                    messagebox.showinfo(
-                        "Receipt Saved", 
-                        f"✓ Receipt saved successfully!\n\nLocation:\n{pdf_path}\n\nPlease open it manually."
-                    )
-                
             except Exception as e:
                 messagebox.showerror("Receipt Error", f"Could not generate receipt:\n{e}")
         
