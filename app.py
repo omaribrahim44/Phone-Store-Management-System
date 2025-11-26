@@ -16,7 +16,6 @@ if sys.version_info[0] >= 3:
 from modules.backup_manager import auto_backup_check
 from modules.health import run_preflight_checks
 from modules.logger import log
-from bootstrap import get_theme
 from ui.main import start_app
 
 if __name__ == "__main__":
@@ -37,8 +36,8 @@ if __name__ == "__main__":
     except Exception as e:
         log.error(f"Auto-backup failed: {e}")
 
-    # Load theme from configuration via bootstrap
-    theme = get_theme()
+    # Load theme from configuration
+    theme = config.get_theme()
     log.info(f"Loaded configuration. Theme: {theme}")
 
     # Start the UI application
