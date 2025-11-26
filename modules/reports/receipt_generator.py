@@ -277,14 +277,27 @@ def generate_sales_receipt_pdf(sale_data, items, filename=None):
     
     # Tagline or business type
     c.setFont("Helvetica-Oblique", 11)
-    c.drawCentredString(width/2, height-2.8*cm, "Premium Mobile & Electronics Solutions")
+    tagline = shop_info.get("tagline", "Premium Mobile & Electronics Solutions")
+    if tagline:
+        c.drawCentredString(width/2, height-2.8*cm, tagline)
     
     # Contact Info - White, Well-spaced
     c.setFont("Helvetica", 10)
     c.drawCentredString(width/2, height-3.5*cm, shop_info.get("address", ""))
     c.setFont("Helvetica", 9)
-    contact_line = f"Tel: {shop_info.get('phone', '')}  |  Email: {shop_info.get('email', '')}  |  Tax ID: {shop_info.get('tax_id', 'N/A')}"
-    c.drawCentredString(width/2, height-4*cm, contact_line)
+    
+    # Build contact line with available info
+    contact_parts = []
+    if shop_info.get('phone'):
+        contact_parts.append(f"Tel: {shop_info.get('phone')}")
+    if shop_info.get('email'):
+        contact_parts.append(f"Email: {shop_info.get('email')}")
+    if shop_info.get('tax_id'):
+        contact_parts.append(f"Tax ID: {shop_info.get('tax_id')}")
+    
+    contact_line = "  |  ".join(contact_parts) if contact_parts else ""
+    if contact_line:
+        c.drawCentredString(width/2, height-4*cm, contact_line)
     
     # Receipt Title with modern styling
     c.setFillColor(colors.HexColor('#F7FAFC'))
@@ -550,7 +563,11 @@ def generate_sales_receipt_pdf(sale_data, items, filename=None):
     c.drawCentredString(width/2, policy_box_y + 0.7*cm, "RETURN POLICY")
     c.setFont("Helvetica", 8)
     c.setFillColor(colors.HexColor('#742A2A'))
-    c.drawCentredString(width/2, policy_box_y + 0.3*cm, "Returns accepted within 7 days with original receipt and packaging")
+    
+    # Use configured return policy
+    return_days = shop_info.get('return_policy_days', 7)
+    return_text = f"Returns accepted within {return_days} days with original receipt and packaging"
+    c.drawCentredString(width/2, policy_box_y + 0.3*cm, return_text)
     
     # Thank you message - more prominent
     c.setFillColor(colors.HexColor('#1A365D'))
@@ -565,12 +582,34 @@ def generate_sales_receipt_pdf(sale_data, items, filename=None):
     # Footer notes with icons
     c.setFont("Helvetica", 8)
     c.setFillColor(colors.HexColor('#718096'))
-    c.drawCentredString(width/2, 1.8*cm, "Keep this receipt for warranty claims and returns")
-    c.drawCentredString(width/2, 1.5*cm, f"For support: {shop_info.get('phone', '')} | {shop_info.get('email', '')}")
     
-    # Website/social media
+    # Warranty info
+    warranty_text = shop_info.get('warranty_info', 'Keep this receipt for warranty claims and returns')
+    if len(warranty_text) > 80:
+        warranty_text = warranty_text[:77] + "..."
+    c.drawCentredString(width/2, 1.8*cm, warranty_text)
+    
+    # Support contact
+    support_parts = []
+    if shop_info.get('phone'):
+        support_parts.append(shop_info.get('phone'))
+    if shop_info.get('email'):
+        support_parts.append(shop_info.get('email'))
+    if support_parts:
+        c.drawCentredString(width/2, 1.5*cm, f"For support: {' | '.join(support_parts)}")
+    
+    # Website and social media
+    footer_line_y = 1.2*cm
+    web_social_parts = []
     if shop_info.get('website'):
-        c.drawCentredString(width/2, 1.2*cm, f"Visit us: {shop_info.get('website', 'www.example.com')}")
+        web_social_parts.append(f"Web: {shop_info.get('website')}")
+    if shop_info.get('social_facebook'):
+        web_social_parts.append(f"FB: {shop_info.get('social_facebook')}")
+    if shop_info.get('social_instagram'):
+        web_social_parts.append(f"IG: {shop_info.get('social_instagram')}")
+    
+    if web_social_parts:
+        c.drawCentredString(width/2, footer_line_y, " | ".join(web_social_parts[:2]))  # Limit to 2 to avoid overflow
     
     # Decorative footer line with gradient effect
     c.setStrokeColor(colors.HexColor('#2C5282'))

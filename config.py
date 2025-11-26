@@ -16,9 +16,19 @@ DEFAULT_SHOP_INFO = {
     "address": "123 Tech Street, Downtown",
     "phone": "+20 123 456 7890",
     "email": "info@mobilecare.com",
+    "website": "www.mobilecare.com",
+    "tax_id": "123-456-789",
+    "commercial_register": "CR-2024-001",
     "currency": "EGP",
     "tax_rate": 14.0,  # Egypt VAT rate
     "logo_path": "assets/logo.png",
+    "tagline": "Premium Mobile & Electronics Solutions",
+    "return_policy_days": 7,
+    "warranty_info": "Warranty covers replaced parts only for 14 days",
+    "social_facebook": "",
+    "social_instagram": "",
+    "social_twitter": "",
+    "business_hours": "Sat-Thu: 9AM-9PM, Fri: 2PM-9PM",
     "theme": "cosmo"
 }
 
