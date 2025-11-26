@@ -82,7 +82,8 @@ class InventoryFrame:
         # --- Search & Filter Bar ---
         filter_frame = tb.Labelframe(self.frame, text="🔍 Search & Filter", padding=20, bootstyle="primary")
         filter_frame.grid(row=1, column=0, sticky="ew", pady=(0, 20))
-        filter_frame.columnconfigure(1, weight=1)
+        filter_frame.columnconfigure(1, weight=1)  # Search entry expands
+        filter_frame.columnconfigure(3, weight=0)  # Category combo fixed width
         
         # Initialize variables first to avoid AttributeError
         self.search_var = tb.StringVar()
@@ -95,14 +96,14 @@ class InventoryFrame:
         search_entry.grid(row=0, column=1, sticky="ew", padx=(0, 20))
         
         # Category filter dropdown
-        tb.Label(filter_frame, text="Category:", font=("Segoe UI", 11, "bold")).grid(row=0, column=2, sticky="w", padx=(0, 10))
-        self.category_var = tb.StringVar(value="All Categories")
+        tb.Label(filter_frame, text="Category:", font=("Segoe UI", 11, "bold")).grid(row=0, column=2, sticky="w", padx=(20, 10))
+        self.category_var = tb.StringVar(value="All")
         self.category_combo = tb.Combobox(
             filter_frame, 
             textvariable=self.category_var, 
             font=("Segoe UI", 11),
             state="readonly",
-            width=20
+            width=15
         )
         self.category_combo.grid(row=0, column=3, sticky="w", padx=(0, 20))
         self.category_combo.bind("<<ComboboxSelected>>", lambda e: self.filter_items())
@@ -142,11 +143,11 @@ class InventoryFrame:
             variable=self.low_stock_var, 
             bootstyle="warning-round-toggle",
             command=self.filter_items
-        ).grid(row=0, column=2, sticky="w", padx=10)
+        ).grid(row=0, column=4, sticky="w", padx=(20, 10))
         
         # Item count label
-        self.count_label = tb.Label(filter_frame, text="Items: 0", font=("Segoe UI", 11, "bold"), bootstyle="info")
-        self.count_label.grid(row=0, column=3, sticky="e", padx=(20, 0))
+        self.count_label = tb.Label(filter_frame, text="Items: 0 / 0", font=("Segoe UI", 11, "bold"), bootstyle="info")
+        self.count_label.grid(row=0, column=5, sticky="e", padx=(20, 0))
 
         # --- Inventory Table ---
         table_frame = tb.Labelframe(self.frame, text="📋 Inventory Items", padding=20, bootstyle="secondary")
@@ -282,9 +283,9 @@ class InventoryFrame:
                     categories.add(str(item[3]))
             
             # Update combobox values
-            category_list = ["All Categories"] + sorted(list(categories))
+            category_list = ["All"] + sorted(list(categories))
             self.category_combo['values'] = category_list
-            self.category_var.set("All Categories")
+            self.category_var.set("All")
         except Exception as e:
             print(f"Error loading categories: {e}")
 
@@ -312,7 +313,7 @@ class InventoryFrame:
         low_stock = self.low_stock_var.get()
         
         # Get category filter
-        selected_category = self.category_var.get() if hasattr(self, 'category_var') else "All Categories"
+        selected_category = self.category_var.get() if hasattr(self, 'category_var') else "All"
         
         for item in self.tree.get_children():
             self.tree.delete(item)
@@ -323,7 +324,7 @@ class InventoryFrame:
         for idx, row in enumerate(self.all_items):
             # row: id, sku, name, category, qty, buy_price, sell_price
             # Filter by category
-            if selected_category != "All Categories":
+            if selected_category != "All":
                 item_category = str(row[3])  # category is at index 3
                 if item_category != selected_category:
                     continue
