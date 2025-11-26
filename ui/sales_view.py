@@ -724,22 +724,39 @@ class SalesFrame:
     
     def show_sale_success_dialog(self, sale_data, receipt_items):
         """Show professional success dialog with detailed information and print receipt button"""
-        # Create success dialog - LARGER
+        # Create success dialog
         dialog = tb.Toplevel(self.frame)
-        dialog.title("Sale Completed Successfully")
-        dialog.geometry("800x700")  # Larger size for more details
+        dialog.title("✓ Sale Completed Successfully")
+        dialog.geometry("900x750")
         dialog.resizable(True, True)
-        dialog.minsize(750, 650)
         
         # Center dialog
         dialog.update_idletasks()
-        x = (dialog.winfo_screenwidth() // 2) - (800 // 2)
-        y = (dialog.winfo_screenheight() // 2) - (700 // 2)
-        dialog.geometry(f"800x700+{x}+{y}")
+        x = (dialog.winfo_screenwidth() // 2) - (900 // 2)
+        y = (dialog.winfo_screenheight() // 2) - (750 // 2)
+        dialog.geometry(f"900x750+{x}+{y}")
         
         # Make dialog modal
         dialog.transient(self.frame)
         dialog.grab_set()
+        
+        # === PRINT BUTTON FUNCTIONS - DEFINE FIRST ===
+        def print_receipt():
+            """Generate and print receipt"""
+            try:
+                from modules.reports.receipt_generator import generate_sales_receipt_pdf
+                pdf_path = generate_sales_receipt_pdf(sale_data, receipt_items)
+                
+                try:
+                    os.startfile(pdf_path)
+                    messagebox.showinfo("Receipt Generated", f"✓ Receipt opened!\n\nSaved to:\n{pdf_path}")
+                except:
+                    messagebox.showinfo("Receipt Saved", f"✓ Receipt saved!\n\nLocation:\n{pdf_path}")
+            except Exception as e:
+                messagebox.showerror("Receipt Error", f"Could not generate receipt:\n{str(e)}")
+        
+        def close_dialog():
+            dialog.destroy()
         
         # Success header - More prominent
         header = tb.Frame(dialog, bootstyle="success", padding=25)
@@ -1021,49 +1038,57 @@ class SalesFrame:
             unbind_from_mousewheel(dialog)
             dialog.destroy()
         
-        # === BUTTONS SECTION - FIXED AT BOTTOM ===
-        buttons_container = tb.Frame(dialog, padding=20, bootstyle="light")
+        # === BUTTONS SECTION - AT THE VERY BOTTOM ===
+        # Separator line
+        ttk.Separator(dialog, orient="horizontal").pack(fill="x", pady=10)
+        
+        # Buttons container with background
+        buttons_container = tb.Frame(dialog, padding=25, bootstyle="light")
         buttons_container.pack(fill="x", side="bottom")
         
-        # Buttons row
+        # Info message ABOVE buttons
+        tb.Label(
+            buttons_container,
+            text="💡 You can print the receipt now or close to continue",
+            font=("Segoe UI", 11, "italic"),
+            foreground="#6c757d"
+        ).pack(pady=(0, 15))
+        
+        # Buttons row - CENTERED
         buttons_row = tb.Frame(buttons_container)
         buttons_row.pack()
         
-        # Print Receipt button (primary action) - LARGE AND PROMINENT
-        tb.Button(
+        # Print Receipt button - VERY LARGE AND BLUE
+        print_btn = tb.Button(
             buttons_row,
-            text="🖨️  Print Receipt",
+            text="🖨️  PRINT RECEIPT",
             bootstyle="primary",
             command=print_receipt,
-            width=25,
-            padding=15
-        ).pack(side="left", padx=10)
+            width=30
+        )
+        print_btn.pack(side="left", padx=15, ipady=15)
         
-        # Close button
-        tb.Button(
+        # Close button - LARGE AND GREEN
+        close_btn = tb.Button(
             buttons_row,
-            text="✓  Close",
+            text="✓  CLOSE",
             bootstyle="success",
             command=close_dialog,
-            width=25,
-            padding=15
-        ).pack(side="left", padx=10)
+            width=30
+        )
+        close_btn.pack(side="left", padx=15, ipady=15)
         
-        # Info message
-        tb.Label(
-            buttons_container,
-            text="💡 Tip: You can print the receipt now or close and continue with the next sale",
-            font=("Segoe UI", 10, "italic"),
-            foreground="#6c757d",
-            wraplength=700,
-            justify="center"
-        ).pack(pady=(15, 0))
-        
-        # Bind mouse wheel after all widgets are created
-        bind_to_mousewheel(dialog)
+        # Bind mouse wheel
+        try:
+            bind_to_mousewheel(dialog)
+        except:
+            pass
         
         # Close on Escape key
         dialog.bind("<Escape>", lambda e: close_dialog())
         
         # Handle window close
         dialog.protocol("WM_DELETE_WINDOW", close_dialog)
+        
+        # Force update to ensure buttons are visible
+        dialog.update_idletasks()
