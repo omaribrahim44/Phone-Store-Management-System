@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ui/customers_view.py
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
@@ -105,33 +106,45 @@ class CustomersFrame:
         table_frame.rowconfigure(0, weight=1)
         
         cols = ("icon", "id", "name", "phone", "email", "type", "purchases", "repairs", "spent", "last_activity")
-        self.tree = ttk.Treeview(table_frame, columns=cols, show="headings", height=18)
+        self.tree = ttk.Treeview(table_frame, columns=cols, show="headings", height=20)
+        
+        # Configure tree style for better appearance
+        style = ttk.Style()
+        style.configure("Treeview",
+                       font=("Segoe UI", 11),
+                       rowheight=35,
+                       background="#FFFFFF",
+                       fieldbackground="#FFFFFF")
+        style.configure("Treeview.Heading",
+                       font=("Segoe UI", 12, "bold"),
+                       padding=10,
+                       background="#E8E8E8")
 
-        # Column configuration with icons
+        # Column configuration with wider columns to fill screen
         widths = {
-            "icon": 50,
-            "id": 60,
-            "name": 200,
-            "phone": 130,
-            "email": 180,
-            "type": 120,
-            "purchases": 100,
-            "repairs": 90,
-            "spent": 130,
-            "last_activity": 120
+            "icon": 60,
+            "id": 70,
+            "name": 250,
+            "phone": 150,
+            "email": 220,
+            "type": 140,
+            "purchases": 120,
+            "repairs": 110,
+            "spent": 150,
+            "last_activity": 140
         }
         
         labels = {
             "icon": "👤",
             "id": "ID",
-            "name": "Customer Name",
-            "phone": "Phone",
-            "email": "Email",
-            "type": "Customer Type",
-            "purchases": "Purchases",
-            "repairs": "Repairs",
-            "spent": "Total Spent",
-            "last_activity": "Last Activity"
+            "name": "CUSTOMER NAME",
+            "phone": "PHONE",
+            "email": "EMAIL",
+            "type": "CUSTOMER TYPE",
+            "purchases": "PURCHASES",
+            "repairs": "REPAIRS",
+            "spent": "TOTAL SPENT",
+            "last_activity": "LAST ACTIVITY"
         }
         
         alignments = {
@@ -149,7 +162,9 @@ class CustomersFrame:
 
         for c in cols:
             self.tree.heading(c, text=labels[c], anchor="center")
-            self.tree.column(c, width=widths[c], anchor=alignments[c], stretch=False)
+            # Allow stretching for name and email columns to fill available space
+            stretch = True if c in ["name", "email"] else False
+            self.tree.column(c, width=widths[c], anchor=alignments[c], stretch=stretch, minwidth=widths[c])
 
         self.tree.grid(row=0, column=0, sticky="nsew")
 

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # controllers/inventory_controller.py
 from modules import models
 from modules.audit_logger import log_action

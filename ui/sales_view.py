@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ui/sales_view.py
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
@@ -111,12 +112,12 @@ class SalesFrame:
         self.cust_phone.grid(row=0, column=3, sticky="ew", pady=5)
         self.cust_phone.bind("<KeyRelease>", self.search_customer)
         
-        # Row 2: Email and Address
-        tb.Label(cust_frame, text="Email:", font=("Segoe UI", 10)).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
+        # Row 2: Email and Address (MANDATORY)
+        tb.Label(cust_frame, text="Email:*", font=("Segoe UI", 10)).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
         self.cust_email = tb.Entry(cust_frame, font=("Segoe UI", 10))
         self.cust_email.grid(row=1, column=1, sticky="ew", pady=5)
         
-        tb.Label(cust_frame, text="Address:", font=("Segoe UI", 10)).grid(row=1, column=2, sticky="w", padx=(15, 10), pady=5)
+        tb.Label(cust_frame, text="Address:*", font=("Segoe UI", 10)).grid(row=1, column=2, sticky="w", padx=(15, 10), pady=5)
         self.cust_address = tb.Entry(cust_frame, font=("Segoe UI", 10))
         self.cust_address.grid(row=1, column=3, sticky="ew", pady=5)
         
@@ -222,6 +223,47 @@ class SalesFrame:
         discount_entry = tb.Entry(discount_row, textvariable=self.discount_var, width=8, font=("Segoe UI", 11))
         discount_entry.pack(side="right", padx=(10, 0))
         self.discount_var.trace("w", lambda *args: self.update_cart_view())
+        
+        # Payment Method
+        payment_row = tb.Frame(summary_frame)
+        payment_row.pack(fill="x", pady=5)
+        tb.Label(payment_row, text="Payment:", font=("Segoe UI", 11)).pack(side="left")
+        self.payment_method_var = tb.StringVar(value="Cash")
+        payment_methods = ["Cash", "Card", "Bank Transfer", "Mobile Payment"]
+        payment_combo = tb.Combobox(
+            payment_row,
+            textvariable=self.payment_method_var,
+            values=payment_methods,
+            state="readonly",
+            width=15,
+            font=("Segoe UI", 10)
+        )
+        payment_combo.pack(side="right", padx=(10, 0))
+        
+        # Notes/Comments
+        notes_row = tb.Frame(summary_frame)
+        notes_row.pack(fill="x", pady=5)
+        tb.Label(notes_row, text="Notes:", font=("Segoe UI", 11)).pack(side="left", anchor="n", pady=5)
+        self.notes_text = tb.Text(notes_row, height=2, font=("Segoe UI", 10), wrap="word")
+        self.notes_text.pack(side="right", fill="x", expand=True, padx=(10, 0))
+        
+        # Add placeholder
+        notes_placeholder = "Optional notes (e.g., gift wrap, special instructions...)"
+        self.notes_text.insert("1.0", notes_placeholder)
+        self.notes_text.config(foreground='#999999')
+        
+        def on_notes_focus_in(event):
+            if self.notes_text.get("1.0", "end-1c") == notes_placeholder:
+                self.notes_text.delete("1.0", "end")
+                self.notes_text.config(foreground='#000000')
+        
+        def on_notes_focus_out(event):
+            if not self.notes_text.get("1.0", "end-1c").strip():
+                self.notes_text.insert("1.0", notes_placeholder)
+                self.notes_text.config(foreground='#999999')
+        
+        self.notes_text.bind('<FocusIn>', on_notes_focus_in)
+        self.notes_text.bind('<FocusOut>', on_notes_focus_out)
         
         # Total
         ttk.Separator(summary_frame, orient="horizontal").pack(fill="x", pady=10)
@@ -562,12 +604,23 @@ class SalesFrame:
         
         cust_name = self.cust_name.get().strip()
         cust_phone = self.cust_phone.get().strip()
-        cust_email = self.cust_email.get().strip() or None
-        cust_address = self.cust_address.get().strip() or None
+        cust_email = self.cust_email.get().strip()
+        cust_address = self.cust_address.get().strip()
         
+        # Validate required fields
         if not cust_name:
             messagebox.showwarning("Customer Name Required", "Please enter customer name.")
             self.cust_name.focus()
+            return
+        
+        if not cust_email:
+            messagebox.showwarning("Email Required", "Please enter customer email address.")
+            self.cust_email.focus()
+            return
+        
+        if not cust_address:
+            messagebox.showwarning("Address Required", "Please enter customer address.")
+            self.cust_address.focus()
             return
         
         # Calculate discount
@@ -577,6 +630,17 @@ class SalesFrame:
         except:
             discount_pct = 0.0
         
+        # Get payment method
+        payment_method = self.payment_method_var.get()
+        
+        # Get notes (check if it's placeholder)
+        notes = self.notes_text.get("1.0", "end-1c").strip()
+        notes_placeholder = "Optional notes (e.g., gift wrap, special instructions...)"
+        if notes == notes_placeholder:
+            notes = None
+        elif not notes:
+            notes = None
+        
         # Prepare items with full details for comprehensive tracking
         items_detailed = self.cart  # Already has all details: id, sku, name, category, qty, price, cost
         
@@ -585,46 +649,34 @@ class SalesFrame:
                 customer_name=cust_name,
                 items=items_detailed,
                 customer_phone=cust_phone or None,
-                customer_email=cust_email,
-                customer_address=cust_address,
+                customer_email=cust_email,  # Now mandatory
+                customer_address=cust_address,  # Now mandatory
                 seller_name="Cashier",  # TODO: Get from logged-in user
                 discount_percent=discount_pct,
-                payment_method="Cash",  # TODO: Add payment method selector
-                notes=None
+                payment_method=payment_method,  # User-selected payment method
+                notes=notes  # Sale notes
             )
             
             if sale_id:
-                messagebox.showinfo("Success", f"✅ Sale #{sale_id} completed!")
-                
-                # Generate receipt
+                # Calculate totals for receipt
+                subtotal = sum([i['qty']*i['price'] for i in self.cart])
                 try:
-                    from modules.reports.receipt_generator import generate_sales_receipt_pdf
-                    
-                    subtotal = sum([i['qty']*i['price'] for i in self.cart])
-                    try:
-                        discount_str = self.discount_var.get().strip()
-                        discount_pct = float(discount_str) if discount_str and discount_str != "0" else 0.0
-                    except:
-                        discount_pct = 0.0
-                    
-                    discount_amount = (subtotal * discount_pct) / 100
-                    grand_total = subtotal - discount_amount
-                    
-                    receipt_items = [(i['name'], i['qty'], i['price'], i['qty']*i['price']) for i in self.cart]
-                    sale_data = (sale_id, datetime.now().isoformat()[:16], cust_name, subtotal, discount_amount, grand_total)
-                    
-                    pdf_path = generate_sales_receipt_pdf(sale_data, receipt_items)
-                    
-                    try:
-                        os.startfile(pdf_path)
-                    except:
-                        messagebox.showinfo("Receipt", f"Receipt saved to:\n{pdf_path}")
-                except Exception as e:
-                    messagebox.showerror("Receipt Error", f"Could not generate receipt: {e}")
+                    discount_str = self.discount_var.get().strip()
+                    discount_pct = float(discount_str) if discount_str and discount_str != "0" else 0.0
+                except:
+                    discount_pct = 0.0
                 
-                # Reset
+                discount_amount = (subtotal * discount_pct) / 100
+                grand_total = subtotal - discount_amount
+                
+                # Store sale data for receipt
+                receipt_items = [(i['name'], i['qty'], i['price'], i['qty']*i['price']) for i in self.cart]
+                sale_data = (sale_id, datetime.now().isoformat()[:16], cust_name, subtotal, discount_amount, grand_total)
+                
+                # Reset cart and form BEFORE showing success dialog
+                cart_copy = self.cart.copy()
                 self.cart = []
-                self.discount_var.set("")  # Empty for next sale
+                self.discount_var.set("")
                 self.cust_name.delete(0, "end")
                 self.cust_phone.delete(0, "end")
                 self.cust_email.delete(0, "end")
@@ -632,8 +684,18 @@ class SalesFrame:
                 self.cust_info_label.configure(text="")
                 self.clear_customer_btn.grid_forget()
                 self._last_found_phone = None
+                
+                # Clear notes
+                self.notes_text.delete("1.0", "end")
+                notes_placeholder = "Optional notes (e.g., gift wrap, special instructions...)"
+                self.notes_text.insert("1.0", notes_placeholder)
+                self.notes_text.config(foreground='#999999')
+                
                 self.update_cart_view()
                 self.refresh_inventory()
+                
+                # Show success dialog with print button
+                self.show_sale_success_dialog(sale_id, sale_data, receipt_items, cust_name, grand_total)
                 
                 # Notify ALL views that sale completed
                 from modules.event_manager import event_manager
@@ -642,3 +704,130 @@ class SalesFrame:
                 messagebox.showerror("Failed", "Could not record sale.")
         except Exception as e:
             messagebox.showerror("Error", str(e))
+    
+    def show_sale_success_dialog(self, sale_id, sale_data, receipt_items, customer_name, total):
+        """Show professional success dialog with print receipt button"""
+        # Create success dialog
+        dialog = tb.Toplevel(self.frame)
+        dialog.title("Sale Completed Successfully")
+        dialog.geometry("500x400")
+        dialog.resizable(False, False)
+        
+        # Center dialog
+        dialog.update_idletasks()
+        x = (dialog.winfo_screenwidth() // 2) - (500 // 2)
+        y = (dialog.winfo_screenheight() // 2) - (400 // 2)
+        dialog.geometry(f"500x400+{x}+{y}")
+        
+        # Make dialog modal
+        dialog.transient(self.frame)
+        dialog.grab_set()
+        
+        # Success header
+        header = tb.Frame(dialog, bootstyle="success", padding=20)
+        header.pack(fill="x")
+        
+        # Success icon and message
+        tb.Label(
+            header,
+            text="✅",
+            font=("Segoe UI", 48),
+            bootstyle="success-inverse"
+        ).pack()
+        
+        tb.Label(
+            header,
+            text="Sale Completed Successfully!",
+            font=("Segoe UI", 18, "bold"),
+            bootstyle="success-inverse"
+        ).pack(pady=(10, 0))
+        
+        # Sale details
+        details_frame = tb.Frame(dialog, padding=30)
+        details_frame.pack(fill="both", expand=True)
+        
+        # Sale information
+        info_frame = tb.Labelframe(details_frame, text="Sale Information", padding=15)
+        info_frame.pack(fill="x", pady=(0, 20))
+        
+        info_grid = tb.Frame(info_frame)
+        info_grid.pack(fill="x")
+        info_grid.columnconfigure(1, weight=1)
+        
+        # Sale ID
+        tb.Label(info_grid, text="Sale ID:", font=("Segoe UI", 11, "bold")).grid(row=0, column=0, sticky="w", pady=5)
+        tb.Label(info_grid, text=f"#{sale_id}", font=("Segoe UI", 11)).grid(row=0, column=1, sticky="w", padx=(10, 0))
+        
+        # Customer
+        tb.Label(info_grid, text="Customer:", font=("Segoe UI", 11, "bold")).grid(row=1, column=0, sticky="w", pady=5)
+        tb.Label(info_grid, text=customer_name, font=("Segoe UI", 11)).grid(row=1, column=1, sticky="w", padx=(10, 0))
+        
+        # Total
+        tb.Label(info_grid, text="Total Amount:", font=("Segoe UI", 11, "bold")).grid(row=2, column=0, sticky="w", pady=5)
+        tb.Label(
+            info_grid,
+            text=f"EGP {total:,.2f}",
+            font=("Segoe UI", 14, "bold"),
+            bootstyle="success"
+        ).grid(row=2, column=1, sticky="w", padx=(10, 0))
+        
+        # Date/Time
+        tb.Label(info_grid, text="Date/Time:", font=("Segoe UI", 11, "bold")).grid(row=3, column=0, sticky="w", pady=5)
+        tb.Label(
+            info_grid,
+            text=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            font=("Segoe UI", 11)
+        ).grid(row=3, column=1, sticky="w", padx=(10, 0))
+        
+        # Buttons frame
+        buttons_frame = tb.Frame(details_frame)
+        buttons_frame.pack(fill="x", pady=(10, 0))
+        buttons_frame.columnconfigure(0, weight=1)
+        buttons_frame.columnconfigure(1, weight=1)
+        
+        def print_receipt():
+            """Generate and print receipt"""
+            try:
+                from modules.reports.receipt_generator import generate_sales_receipt_pdf
+                
+                pdf_path = generate_sales_receipt_pdf(sale_data, receipt_items)
+                
+                # Open PDF
+                try:
+                    os.startfile(pdf_path)
+                    messagebox.showinfo("Receipt", f"Receipt opened successfully!\n\nSaved to: {pdf_path}")
+                except Exception as e:
+                    messagebox.showinfo("Receipt Saved", f"Receipt saved to:\n{pdf_path}\n\nPlease open it manually.")
+                
+            except Exception as e:
+                messagebox.showerror("Receipt Error", f"Could not generate receipt:\n{e}")
+        
+        def close_dialog():
+            """Close the dialog"""
+            dialog.destroy()
+        
+        # Print Receipt button (primary action)
+        tb.Button(
+            buttons_frame,
+            text="🖨️ Print Receipt",
+            bootstyle="primary",
+            command=print_receipt,
+            width=20
+        ).grid(row=0, column=0, padx=5, pady=5, ipady=10)
+        
+        # Close button
+        tb.Button(
+            buttons_frame,
+            text="✓ Close",
+            bootstyle="success-outline",
+            command=close_dialog,
+            width=20
+        ).grid(row=0, column=1, padx=5, pady=5, ipady=10)
+        
+        # Info message
+        tb.Label(
+            details_frame,
+            text="💡 You can print the receipt now or close and continue with next sale",
+            font=("Segoe UI", 9, "italic"),
+            foreground="#6c757d"
+        ).pack(pady=(15, 0))

@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 # ui/inventory_view.py
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, filedialog, simpledialog
 from controllers.inventory_controller import InventoryController
 import csv
 
@@ -57,9 +58,9 @@ class InventoryFrame:
         tb.Button(
             actions, 
             text="🗑️ Delete", 
-            bootstyle="danger", 
+            bootstyle="danger-outline", 
             command=self.delete_selected_item,
-            width=10
+            width=12
         ).pack(side="right", padx=5)
         
         tb.Button(
@@ -259,6 +260,9 @@ class InventoryFrame:
         try:
             self.all_items = InventoryController.get_all_items()
             self.filter_items()
+            # Notify ALL views that inventory was refreshed
+            from modules.event_manager import event_manager
+            event_manager.notify('inventory_changed', {'action': 'refresh'})
         except Exception as e:
             messagebox.showerror("Error", f"Could not load inventory: {e}")
 

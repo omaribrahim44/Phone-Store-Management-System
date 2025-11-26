@@ -6,8 +6,11 @@ import sqlite3
 DB_PATH = Path(__file__).resolve().parents[1] / "shop.db"
 
 def get_conn():
-    """Return a sqlite3.Connection to the project DB."""
-    return sqlite3.connect(str(DB_PATH))
+    """Return a sqlite3.Connection to the project DB with UTF-8 support for Arabic text."""
+    conn = sqlite3.connect(str(DB_PATH))
+    # Ensure UTF-8 encoding for Arabic and international characters
+    conn.text_factory = str
+    return conn
 
 def init_db():
     """Initialize the database with necessary tables."""

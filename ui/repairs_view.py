@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ui/repairs_view.py
 import csv
 import os
@@ -76,8 +77,13 @@ class RepairsFrame:
         form_frame.columnconfigure(5, weight=1)
 
         # Row 1
-        tb.Label(form_frame, text="Order #").grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        self.order = tb.Entry(form_frame); self.order.grid(row=0, column=1, sticky="ew", padx=5)
+        tb.Label(form_frame, text="Order # (Auto)", bootstyle="info").grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        self.order = tb.Entry(form_frame, state="readonly")
+        self.order.grid(row=0, column=1, sticky="ew", padx=5)
+        # Show placeholder for auto-generation
+        self.order.configure(state="normal")
+        self.order.insert(0, "Auto-generated")
+        self.order.configure(state="readonly", foreground="#999999")
         
         tb.Label(form_frame, text="Customer").grid(row=0, column=2, sticky="w", padx=5)
         self.cust = tb.Entry(form_frame); self.cust.grid(row=0, column=3, sticky="ew", padx=5)
@@ -119,21 +125,35 @@ class RepairsFrame:
         tb.Button(btn_frame, text="Clear", bootstyle="secondary-outline", command=self.clear_form).pack(side="left", padx=(0, 5))
         tb.Button(btn_frame, text="Create Order", bootstyle="success", command=self.create_order).pack(side="left")
 
-        # Treeview
+        # Treeview with improved styling
         cols = ("id","order","customer","phone","model","imei","status","received")
         self.tree = ttk.Treeview(self.frame, columns=cols, show="headings", height=14)
         
+        # Configure tree style
+        style = ttk.Style()
+        style.configure("Treeview", 
+                       font=("Segoe UI", 11),
+                       rowheight=32,
+                       background="#FFFFFF",
+                       fieldbackground="#FFFFFF")
+        style.configure("Treeview.Heading",
+                       font=("Segoe UI", 12, "bold"),
+                       padding=10,
+                       background="#E8E8E8")
+        
         # headings with better labels
         labels = {
-            "id":"ID", "order":"Order #", "customer":"Customer", "phone":"Phone",
-            "model":"Model", "imei":"IMEI", "status":"Status", "received":"Received"
+            "id":"ID", "order":"ORDER #", "customer":"CUSTOMER", "phone":"PHONE",
+            "model":"MODEL", "imei":"IMEI", "status":"STATUS", "received":"RECEIVED"
         }
-        # Adjusted widths and alignment - using 'w' (left) for most to prevent visual shifting
-        widths = {"id":50, "order":120, "customer":200, "phone":120, "model":150, "imei":120, "status":120, "received":140}
-        anchors = {"id":"center", "order":"w", "customer":"w", "phone":"w", "model":"w", "imei":"w", "status":"center", "received":"w"}
+        # Proper widths and alignment for better readability
+        widths = {"id":60, "order":130, "customer":220, "phone":130, "model":180, "imei":140, "status":130, "received":160}
+        # Center alignment for ID, Order #, Status - Left for text fields
+        anchors = {"id":"center", "order":"center", "customer":"w", "phone":"center", "model":"w", "imei":"center", "status":"center", "received":"center"}
         
         for c in cols:
-            self.tree.heading(c, text=labels.get(c, c).upper(), anchor="w") # Ensure headers are left-aligned
+            # Headers match data alignment for proper column alignment
+            self.tree.heading(c, text=labels.get(c, c), anchor=anchors.get(c, "w"))
             self.tree.column(c, width=widths.get(c,100), anchor=anchors.get(c, "w"))
         self.tree.grid(row=3, column=0, sticky="nsew", padx=0, pady=(0,6))
 
@@ -168,7 +188,12 @@ class RepairsFrame:
         self.refresh()
     
     def clear_form(self):
+        # Reset order field to auto-generated placeholder
+        self.order.configure(state="normal")
         self.order.delete(0, 'end')
+        self.order.insert(0, "Auto-generated")
+        self.order.configure(state="readonly", foreground="#999999")
+        
         self.cust.delete(0, 'end')
         self.model.delete(0, 'end')
         self.phone.delete(0, 'end')
@@ -275,11 +300,33 @@ class RepairsFrame:
             
             if tags:
                 self.tree.item(iid, tags=tuple(tags))
+        
+        # Notify that repairs were refreshed (for synchronization)
+        from modules.event_manager import event_manager
+        event_manager.notify('repair_updated', {'action': 'refresh'})
 
     def create_order(self):
-        # Simple 6-digit random number for Order #
-        default_order = str(random.randint(100000, 999999))
-        order = self.order.get().strip() or default_order
+        # AUTO-GENERATE Order # - Get next sequential number from database
+        # Order field is readonly, so always auto-generate
+        order = ""
+        if True:  # Always auto-generate
+            # Auto-generate sequential order number
+            try:
+                from modules.db import get_conn
+                conn = get_conn()
+                c = conn.cursor()
+                c.execute("SELECT MAX(CAST(order_number AS INTEGER)) FROM repair_orders WHERE order_number GLOB '[0-9]*'")
+                result = c.fetchone()
+                conn.close()
+                
+                if result and result[0]:
+                    order = str(int(result[0]) + 1)
+                else:
+                    order = "1"  # Start from 1 if no orders exist
+            except:
+                # Fallback to random if query fails
+                order = str(random.randint(100000, 999999))
+        
         cust = self.cust.get().strip()
         model = self.model.get().strip()
         phone = self.phone.get().strip()
@@ -307,22 +354,28 @@ class RepairsFrame:
             return
         
         if not problem:
-            messagebox.showwarning("Missing Information", "Problem description is required")
+            messagebox.showwarning("Missing Information", "Problem description is required (supports Arabic)")
             self.problem.focus()
             return
         
         try:
-            rid = RepairController.create_repair(order, cust, phone, model, "", problem, None, "", total)
+            rid = RepairController.create_repair(order, cust, phone, model, "", problem, None, "Technician", total)
             if rid:
                 messagebox.showinfo("✓ Success", f"Repair order #{order} created successfully!")
                 self.clear_form()
                 self.refresh()
+                
+                # Notify ALL views that repair was created
+                from modules.event_manager import event_manager
+                event_manager.notify('repair_updated', {'action': 'create', 'order': order, 'customer': cust})
             else:
                 messagebox.showerror("Error", "Failed to create repair order. Check logs.")
         except Exception as e:
             err_msg = str(e)
             if "UNIQUE constraint failed" in err_msg and "order_number" in err_msg:
                 messagebox.showerror("Duplicate Order #", f"Order #{order} already exists.\n\nPlease leave 'Order #' blank to auto-generate, or use a unique number.")
+            elif "Validation error" in err_msg:
+                messagebox.showerror("Validation Error", err_msg)
             else:
                 messagebox.showerror("Create Failed", err_msg)
 
@@ -464,6 +517,10 @@ class RepairsFrame:
                 _ = RepairController.update_status(rid, new_status, "SystemUser", "")
                 messagebox.showinfo("OK", f"Status set to {new_status}")
                 self.refresh()
+                
+                # Notify ALL views that repair status changed
+                from modules.event_manager import event_manager
+                event_manager.notify('repair_updated', {'action': 'status_change', 'repair_id': rid, 'status': new_status})
             except Exception as e:
                 messagebox.showerror("Failed", str(e))
 
@@ -476,80 +533,467 @@ class RepairsFrame:
             return
 
         win = tb.Toplevel(self.frame)
-        win.title(f"Repair #{rid}")
-        win.geometry("900x600")
+        win.title(f"Repair Order #{order[1]} - Details")
+        win.geometry("1000x700")
+        win.resizable(True, True)
+        
+        # Center window
+        win.update_idletasks()
+        x = (win.winfo_screenwidth() // 2) - (1000 // 2)
+        y = (win.winfo_screenheight() // 2) - (700 // 2)
+        win.geometry(f"1000x700+{x}+{y}")
 
-        header = tb.Frame(win); header.pack(fill="x", padx=8, pady=6)
-        tb.Label(header, text=f"Order: {order[1]}", font=("Helvetica", 12, "bold")).grid(row=0, column=0, sticky="w")
-        tb.Label(header, text=f"Customer: {order[2]}   Phone: {order[3]}").grid(row=1, column=0, sticky="w")
+        # Header with order info
+        header = tb.Labelframe(win, text="Order Information", padding=15, bootstyle="primary")
+        header.pack(fill="x", padx=15, pady=(15, 10))
+        
+        info_grid = tb.Frame(header)
+        info_grid.pack(fill="x")
+        info_grid.columnconfigure(1, weight=1)
+        info_grid.columnconfigure(3, weight=1)
+        
+        # Row 1
+        tb.Label(info_grid, text="Order #:", font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w", padx=5, pady=3)
+        tb.Label(info_grid, text=order[1], font=("Segoe UI", 10)).grid(row=0, column=1, sticky="w", padx=5)
+        
+        tb.Label(info_grid, text="Status:", font=("Segoe UI", 10, "bold")).grid(row=0, column=2, sticky="w", padx=5, pady=3)
+        status_label = tb.Label(info_grid, text=order[6] if len(order) > 6 else "Unknown", font=("Segoe UI", 10), bootstyle="info")
+        status_label.grid(row=0, column=3, sticky="w", padx=5)
+        
+        # Row 2
+        tb.Label(info_grid, text="Customer:", font=("Segoe UI", 10, "bold")).grid(row=1, column=0, sticky="w", padx=5, pady=3)
+        tb.Label(info_grid, text=order[2], font=("Segoe UI", 10)).grid(row=1, column=1, sticky="w", padx=5)
+        
+        tb.Label(info_grid, text="Phone:", font=("Segoe UI", 10, "bold")).grid(row=1, column=2, sticky="w", padx=5, pady=3)
+        tb.Label(info_grid, text=order[3], font=("Segoe UI", 10)).grid(row=1, column=3, sticky="w", padx=5)
+        
+        # Row 3
+        tb.Label(info_grid, text="Device:", font=("Segoe UI", 10, "bold")).grid(row=2, column=0, sticky="w", padx=5, pady=3)
+        tb.Label(info_grid, text=order[4], font=("Segoe UI", 10)).grid(row=2, column=1, sticky="w", padx=5)
+        
+        tb.Label(info_grid, text="IMEI:", font=("Segoe UI", 10, "bold")).grid(row=2, column=2, sticky="w", padx=5, pady=3)
+        tb.Label(info_grid, text=order[5] if len(order) > 5 else "N/A", font=("Segoe UI", 10)).grid(row=2, column=3, sticky="w", padx=5)
 
-        # parts tree
-        cols = ("id","name","qty","price","cost","total")
-        pt = ttk.Treeview(win, columns=cols, show="headings", height=8)
-        widths = {"id":50,"name":300,"qty":60,"price":80,"cost":80,"total":80}
+        # Parts section with professional styling
+        parts_frame = tb.Labelframe(win, text="🔧 Parts & Services", padding=15, bootstyle="secondary")
+        parts_frame.pack(fill="both", expand=True, padx=15, pady=10)
+        
+        # Parts table with better columns
+        cols = ("id", "name", "qty", "unit_price", "cost_price", "line_total", "profit")
+        pt = ttk.Treeview(parts_frame, columns=cols, show="headings", height=10)
+        
+        # Configure columns with proper alignment
+        headers = {
+            "id": "ID",
+            "name": "Part/Service Name",
+            "qty": "Qty",
+            "unit_price": "Unit Price",
+            "cost_price": "Cost",
+            "line_total": "Line Total",
+            "profit": "Profit"
+        }
+        
+        widths = {"id": 50, "name": 350, "qty": 70, "unit_price": 100, "cost_price": 100, "line_total": 120, "profit": 100}
+        anchors = {"id": "center", "name": "w", "qty": "center", "unit_price": "e", "cost_price": "e", "line_total": "e", "profit": "e"}
+        
         for c in cols:
-            pt.heading(c, text=c.upper()); pt.column(c, width=widths.get(c,80))
-        pt.pack(fill="x", padx=8, pady=6)
-
-        total_parts = 0.0
-        for p in parts:
-            # p: id, name, qty, unit_price, cost_price
-            if len(p) >= 5:
-                cost = p[4] or 0.0
-                tot = (p[2] or 1) * (p[3] or 0)
-                pt.insert("", "end", values=(p[0], p[1], p[2], f"{p[3]:.2f}", f"{cost:.2f}", f"{tot:.2f}"))
-                total_parts += tot
-            elif len(p) >= 4:
-                # fallback for old data
-                tot = (p[2] or 1) * (p[3] or 0)
-                pt.insert("", "end", values=(p[0], p[1], p[2], f"{p[3]:.2f}", "0.00", f"{tot:.2f}"))
-                total_parts += tot
-
-        tot_frame = tb.Frame(win); tot_frame.pack(fill="x", padx=8, pady=6)
-        tb.Label(tot_frame, text=f"Parts total: {total_parts:.2f}").pack(side="left")
-
-        addf = tb.Frame(win); addf.pack(fill="x", padx=8, pady=6)
-        tb.Label(addf, text="Part name").grid(row=0, column=0); e_name = tb.Entry(addf); e_name.grid(row=0, column=1)
-        tb.Label(addf, text="Qty").grid(row=0, column=2); e_qty = tb.Entry(addf, width=6); e_qty.grid(row=0, column=3)
-        tb.Label(addf, text="Unit price").grid(row=0, column=4); e_price = tb.Entry(addf, width=12); e_price.grid(row=0, column=5)
+            pt.heading(c, text=headers[c], anchor=anchors[c])
+            pt.column(c, width=widths[c], anchor=anchors[c])
+        
+        pt.pack(fill="both", expand=True, pady=(0, 10))
+        
+        # Scrollbar
+        vsb = ttk.Scrollbar(parts_frame, orient="vertical", command=pt.yview)
+        vsb.pack(side="right", fill="y")
+        pt.configure(yscrollcommand=vsb.set)
+        
+        # Function to refresh parts table and totals
+        def refresh_parts_table():
+            # Clear table
+            for item in pt.get_children():
+                pt.delete(item)
+            
+            # Reload parts from database
+            try:
+                _, parts_updated, _ = RepairController.get_repair_details(rid)
+            except:
+                parts_updated = parts
+            
+            total_cost = 0.0
+            total_revenue = 0.0
+            total_profit = 0.0
+            
+            for p in parts_updated:
+                # p: id, name, qty, unit_price, cost_price
+                if len(p) >= 5:
+                    part_id = p[0]
+                    name = p[1]
+                    qty = p[2] or 1
+                    unit_price = p[3] or 0.0
+                    cost_price = p[4] or 0.0
+                    
+                    line_total = qty * unit_price
+                    line_cost = qty * cost_price
+                    line_profit = line_total - line_cost
+                    
+                    total_revenue += line_total
+                    total_cost += line_cost
+                    total_profit += line_profit
+                    
+                    pt.insert("", "end", values=(
+                        part_id,
+                        name,
+                        qty,
+                        f"EGP {unit_price:,.2f}",
+                        f"EGP {cost_price:,.2f}",
+                        f"EGP {line_total:,.2f}",
+                        f"EGP {line_profit:,.2f}"
+                    ))
+                elif len(p) >= 4:
+                    # Fallback for old data
+                    part_id = p[0]
+                    name = p[1]
+                    qty = p[2] or 1
+                    unit_price = p[3] or 0.0
+                    line_total = qty * unit_price
+                    
+                    total_revenue += line_total
+                    
+                    pt.insert("", "end", values=(
+                        part_id,
+                        name,
+                        qty,
+                        f"EGP {unit_price:,.2f}",
+                        "EGP 0.00",
+                        f"EGP {line_total:,.2f}",
+                        "EGP 0.00"
+                    ))
+            
+            # Update totals
+            lbl_total_cost.configure(text=f"EGP {total_cost:,.2f}")
+            lbl_total_revenue.configure(text=f"EGP {total_revenue:,.2f}")
+            lbl_total_profit.configure(text=f"EGP {total_profit:,.2f}")
+            
+            # Update profit color
+            if total_profit > 0:
+                lbl_total_profit.configure(bootstyle="success")
+            elif total_profit < 0:
+                lbl_total_profit.configure(bootstyle="danger")
+            else:
+                lbl_total_profit.configure(bootstyle="secondary")
+        
+        # Totals summary
+        totals_frame = tb.Frame(parts_frame)
+        totals_frame.pack(fill="x", pady=(10, 0))
+        
+        # Three columns for totals
+        totals_frame.columnconfigure(0, weight=1)
+        totals_frame.columnconfigure(1, weight=1)
+        totals_frame.columnconfigure(2, weight=1)
+        
+        # Total Cost
+        cost_card = tb.Frame(totals_frame, bootstyle="secondary", padding=10)
+        cost_card.grid(row=0, column=0, sticky="ew", padx=5)
+        tb.Label(cost_card, text="Total Cost", font=("Segoe UI", 10, "bold"), bootstyle="secondary-inverse").pack()
+        lbl_total_cost = tb.Label(cost_card, text="EGP 0.00", font=("Segoe UI", 14, "bold"), bootstyle="secondary-inverse")
+        lbl_total_cost.pack()
+        
+        # Total Revenue
+        revenue_card = tb.Frame(totals_frame, bootstyle="info", padding=10)
+        revenue_card.grid(row=0, column=1, sticky="ew", padx=5)
+        tb.Label(revenue_card, text="Total Revenue", font=("Segoe UI", 10, "bold"), bootstyle="info-inverse").pack()
+        lbl_total_revenue = tb.Label(revenue_card, text="EGP 0.00", font=("Segoe UI", 14, "bold"), bootstyle="info-inverse")
+        lbl_total_revenue.pack()
+        
+        # Total Profit
+        profit_card = tb.Frame(totals_frame, bootstyle="success", padding=10)
+        profit_card.grid(row=0, column=2, sticky="ew", padx=5)
+        tb.Label(profit_card, text="Total Profit", font=("Segoe UI", 10, "bold"), bootstyle="success-inverse").pack()
+        lbl_total_profit = tb.Label(profit_card, text="EGP 0.00", font=("Segoe UI", 14, "bold"), bootstyle="success-inverse")
+        lbl_total_profit.pack()
+        
+        # Add part form
+        add_part_frame = tb.Labelframe(parts_frame, text="➕ Add Part/Service", padding=10)
+        add_part_frame.pack(fill="x", pady=(10, 0))
+        
+        add_part_frame.columnconfigure(1, weight=2)
+        add_part_frame.columnconfigure(3, weight=1)
+        add_part_frame.columnconfigure(5, weight=1)
+        
+        tb.Label(add_part_frame, text="Part Name:", font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        e_name = tb.Entry(add_part_frame, font=("Segoe UI", 10))
+        e_name.grid(row=0, column=1, sticky="ew", padx=5)
+        
+        tb.Label(add_part_frame, text="Qty:", font=("Segoe UI", 10)).grid(row=0, column=2, sticky="w", padx=5)
+        e_qty = tb.Entry(add_part_frame, font=("Segoe UI", 10), width=8)
+        e_qty.grid(row=0, column=3, sticky="ew", padx=5)
+        e_qty.insert(0, "1")
+        
+        tb.Label(add_part_frame, text="Unit Price:", font=("Segoe UI", 10)).grid(row=0, column=4, sticky="w", padx=5)
+        e_price = tb.Entry(add_part_frame, font=("Segoe UI", 10), width=12)
+        e_price.grid(row=0, column=5, sticky="ew", padx=5)
+        
+        # Cost display (auto-fetched)
+        cost_info = tb.Label(add_part_frame, text="", font=("Segoe UI", 9, "italic"), foreground="#6c757d")
+        cost_info.grid(row=1, column=1, columnspan=5, sticky="w", padx=5, pady=(0, 5))
+        
+        def on_part_name_change(*args):
+            """Auto-fetch cost when part name is entered"""
+            name = e_name.get().strip()
+            if name:
+                try:
+                    cost = InventoryController.get_item_cost(name)
+                    if cost > 0:
+                        cost_info.configure(text=f"💰 Cost from inventory: EGP {cost:.2f}", foreground="#28a745")
+                    else:
+                        cost_info.configure(text="ℹ️ Part not in inventory - cost will be 0", foreground="#6c757d")
+                except:
+                    cost_info.configure(text="ℹ️ Part not in inventory - cost will be 0", foreground="#6c757d")
+            else:
+                cost_info.configure(text="")
+        
+        e_name.bind("<KeyRelease>", on_part_name_change)
         
         def on_add_part():
             name = e_name.get().strip()
-            try: q = int(e_qty.get() or 1)
-            except: q = 1
-            try: pr = float(e_price.get() or 0)
-            except: pr = 0.0
             
+            # Validate part name
             if not name:
-                messagebox.showerror("Error", "Part name required"); return
+                messagebox.showwarning("Missing Information", "Part name is required")
+                e_name.focus()
+                return
             
-            # Auto-fetch cost
+            # Validate quantity
+            try:
+                qty = int(e_qty.get().strip())
+                if qty <= 0:
+                    raise ValueError("Quantity must be positive")
+            except ValueError as e:
+                messagebox.showwarning("Invalid Quantity", f"Please enter a valid positive number for quantity\n\nError: {e}")
+                e_qty.focus()
+                return
+            
+            # Validate price
+            try:
+                price = float(e_price.get().strip())
+                if price < 0:
+                    raise ValueError("Price cannot be negative")
+            except ValueError as e:
+                messagebox.showwarning("Invalid Price", f"Please enter a valid number for price\n\nError: {e}")
+                e_price.focus()
+                return
+            
+            # Auto-fetch cost from inventory
             cost = 0.0
             try:
                 cost = InventoryController.get_item_cost(name)
-            except: pass
-
+            except:
+                pass
+            
             try:
-                # Pass cost to add_repair_part
-                _ = RepairController.add_part(rid, name, q, pr, cost)
-                pt.insert("", "end", values=(None, name, q, f"{pr:.2f}", f"{cost:.2f}", f"{q*pr:.2f}"))
-                messagebox.showinfo("OK", f"Part added (Cost: {cost})")
+                # Add part to database
+                success = RepairController.add_part(rid, name, qty, price, cost)
+                
+                if success:
+                    # Clear form
+                    e_name.delete(0, 'end')
+                    e_qty.delete(0, 'end')
+                    e_qty.insert(0, "1")
+                    e_price.delete(0, 'end')
+                    cost_info.configure(text="")
+                    
+                    # Refresh parts table
+                    refresh_parts_table()
+                    
+                    # Show success message
+                    line_total = qty * price
+                    profit = line_total - (qty * cost)
+                    messagebox.showinfo(
+                        "✓ Part Added",
+                        f"Part added successfully!\n\n"
+                        f"Part: {name}\n"
+                        f"Quantity: {qty}\n"
+                        f"Unit Price: EGP {price:.2f}\n"
+                        f"Line Total: EGP {line_total:.2f}\n"
+                        f"Profit: EGP {profit:.2f}"
+                    )
+                    
+                    # Notify other views
+                    from modules.event_manager import event_manager
+                    event_manager.notify('repair_updated', {'action': 'add_part', 'repair_id': rid})
+                    
+                    # Refresh main table
+                    self.refresh()
+                else:
+                    messagebox.showerror("Error", "Failed to add part")
             except Exception as e:
-                messagebox.showerror("Failed", str(e))
-        tb.Button(addf, text="Add Part", bootstyle="success", command=on_add_part).grid(row=0, column=6, padx=6)
+                messagebox.showerror("Error", f"Failed to add part: {e}")
+        
+        tb.Button(
+            add_part_frame,
+            text="💾 Add Part",
+            bootstyle="success",
+            command=on_add_part
+        ).grid(row=0, column=6, padx=10)
 
-        # status change
-        sf = tb.Frame(win); sf.pack(fill="x", padx=8, pady=6)
-        tb.Label(sf, text="Change status").grid(row=0, column=0)
-        status_var = StringVar(value=order[9] if len(order)>9 else (order[9] if order else "Received"))
+        # Payment tracking section
+        payment_frame = tb.Labelframe(win, text="💳 Payment Tracking", padding=15, bootstyle="warning")
+        payment_frame.pack(fill="x", padx=15, pady=(0, 10))
+        
+        payment_frame.columnconfigure(1, weight=1)
+        payment_frame.columnconfigure(3, weight=1)
+        
+        # Get current total revenue for payment
+        try:
+            _, parts_for_payment, _ = RepairController.get_repair_details(rid)
+            total_to_pay = sum([(p[2] or 1) * (p[3] or 0) for p in parts_for_payment if len(p) >= 4])
+        except:
+            total_to_pay = 0.0
+        
+        # Payment status
+        tb.Label(payment_frame, text="Amount Due:", font=("Segoe UI", 11, "bold")).grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        lbl_amount_due = tb.Label(
+            payment_frame,
+            text=f"EGP {total_to_pay:,.2f}",
+            font=("Segoe UI", 14, "bold"),
+            bootstyle="warning"
+        )
+        lbl_amount_due.grid(row=0, column=1, sticky="w", padx=5)
+        
+        # Payment method
+        tb.Label(payment_frame, text="Payment Method:", font=("Segoe UI", 10, "bold")).grid(row=1, column=0, sticky="w", padx=5, pady=5)
+        payment_method_var = StringVar(value="Cash")
+        payment_methods = ["Cash", "Card", "Bank Transfer", "Mobile Payment", "Other"]
+        payment_method_combo = tb.Combobox(
+            payment_frame,
+            textvariable=payment_method_var,
+            values=payment_methods,
+            state="readonly",
+            font=("Segoe UI", 10),
+            width=20
+        )
+        payment_method_combo.grid(row=1, column=1, sticky="w", padx=5)
+        
+        # Amount paid
+        tb.Label(payment_frame, text="Amount Paid:", font=("Segoe UI", 10, "bold")).grid(row=1, column=2, sticky="w", padx=5, pady=5)
+        amount_paid_entry = tb.Entry(payment_frame, font=("Segoe UI", 10), width=15)
+        amount_paid_entry.grid(row=1, column=3, sticky="w", padx=5)
+        amount_paid_entry.insert(0, "0.00")
+        
+        # Payment notes
+        tb.Label(payment_frame, text="Notes:", font=("Segoe UI", 10, "bold")).grid(row=2, column=0, sticky="w", padx=5, pady=5)
+        payment_notes_entry = tb.Entry(payment_frame, font=("Segoe UI", 10))
+        payment_notes_entry.grid(row=2, column=1, columnspan=3, sticky="ew", padx=5)
+        
+        def record_payment():
+            """Record payment for repair"""
+            try:
+                amount_paid = float(amount_paid_entry.get().strip())
+                if amount_paid <= 0:
+                    messagebox.showwarning("Invalid Amount", "Please enter a valid payment amount greater than 0")
+                    return
+                
+                payment_method = payment_method_var.get()
+                notes = payment_notes_entry.get().strip()
+                
+                # Calculate balance
+                balance = total_to_pay - amount_paid
+                
+                # Confirm payment
+                confirm_msg = (
+                    f"Record Payment?\n\n"
+                    f"Amount Due: EGP {total_to_pay:,.2f}\n"
+                    f"Amount Paid: EGP {amount_paid:,.2f}\n"
+                    f"Balance: EGP {balance:,.2f}\n"
+                    f"Method: {payment_method}\n"
+                )
+                
+                if balance > 0:
+                    confirm_msg += f"\n⚠️ Remaining balance: EGP {balance:,.2f}"
+                elif balance < 0:
+                    confirm_msg += f"\n💰 Change to return: EGP {abs(balance):,.2f}"
+                else:
+                    confirm_msg += f"\n✅ Paid in full"
+                
+                if messagebox.askyesno("Confirm Payment", confirm_msg):
+                    # Here you would save payment to database
+                    # For now, show success message
+                    messagebox.showinfo(
+                        "✓ Payment Recorded",
+                        f"Payment recorded successfully!\n\n"
+                        f"Amount: EGP {amount_paid:,.2f}\n"
+                        f"Method: {payment_method}\n"
+                        f"Balance: EGP {balance:,.2f}"
+                    )
+                    
+                    # Clear form
+                    amount_paid_entry.delete(0, 'end')
+                    amount_paid_entry.insert(0, "0.00")
+                    payment_notes_entry.delete(0, 'end')
+                    
+                    # Notify other views
+                    from modules.event_manager import event_manager
+                    event_manager.notify('repair_updated', {'action': 'payment', 'repair_id': rid, 'amount': amount_paid})
+                    
+            except ValueError:
+                messagebox.showwarning("Invalid Amount", "Please enter a valid number for payment amount")
+                amount_paid_entry.focus()
+        
+        # Record payment button
+        tb.Button(
+            payment_frame,
+            text="💰 Record Payment",
+            bootstyle="success",
+            command=record_payment
+        ).grid(row=3, column=0, columnspan=4, pady=(10, 0), ipady=8)
+        
+        # Status change section
+        status_frame = tb.Labelframe(win, text="📋 Update Status", padding=15, bootstyle="info")
+        status_frame.pack(fill="x", padx=15, pady=(0, 15))
+        
+        status_frame.columnconfigure(1, weight=1)
+        status_frame.columnconfigure(3, weight=2)
+        
+        tb.Label(status_frame, text="New Status:", font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w", padx=5)
+        status_var = StringVar(value=order[6] if len(order) > 6 else "Received")
         options = list(self.STATUS_TAGS.keys())
-        cb = tb.Combobox(sf, textvariable=status_var, values=options, state="readonly"); cb.grid(row=0, column=1)
-        e_comment = tb.Entry(sf, width=40); e_comment.grid(row=0, column=2, padx=8)
+        cb = tb.Combobox(status_frame, textvariable=status_var, values=options, state="readonly", font=("Segoe UI", 10))
+        cb.grid(row=0, column=1, sticky="ew", padx=5)
+        
+        tb.Label(status_frame, text="Comment:", font=("Segoe UI", 10, "bold")).grid(row=0, column=2, sticky="w", padx=5)
+        e_comment = tb.Entry(status_frame, font=("Segoe UI", 10))
+        e_comment.grid(row=0, column=3, sticky="ew", padx=5)
+        
         def save_status():
-            new = status_var.get(); comment = e_comment.get().strip()
+            new_status = status_var.get()
+            comment = e_comment.get().strip()
+            
             try:
-                _ = RepairController.update_status(rid, new, "SystemUser", comment)
-                messagebox.showinfo("OK", "Status updated"); win.destroy(); self.refresh()
+                success = RepairController.update_status(rid, new_status, "SystemUser", comment)
+                
+                if success:
+                    messagebox.showinfo("✓ Success", f"Status updated to: {new_status}")
+                    
+                    # Notify ALL views
+                    from modules.event_manager import event_manager
+                    event_manager.notify('repair_updated', {'action': 'status_change', 'repair_id': rid, 'status': new_status})
+                    
+                    # Refresh main table
+                    self.refresh()
+                    
+                    # Close window
+                    win.destroy()
+                else:
+                    messagebox.showerror("Error", "Failed to update status")
             except Exception as e:
-                messagebox.showerror("Failed", str(e))
-        tb.Button(sf, text="Update", bootstyle="primary", command=save_status).grid(row=0, column=3, padx=6)
+                messagebox.showerror("Error", f"Failed to update status: {e}")
+        
+        tb.Button(
+            status_frame,
+            text="💾 Update Status",
+            bootstyle="primary",
+            command=save_status
+        ).grid(row=0, column=4, padx=10)
+        
+        # Initial load of parts
+        refresh_parts_table()

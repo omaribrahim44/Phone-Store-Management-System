@@ -211,6 +211,39 @@ def test_create_sale_rejects_insufficient_inventory(test_db):
 
 
 @pytest.mark.unit
+def test_create_sale_rejects_zero_inventory(test_db):
+    """
+    Test that sales are rejected when inventory quantity is zero.
+    **Validates: Requirements 1.3**
+    """
+    # Add inventory item with zero quantity
+    models.add_inventory_item("SALE-ZERO", "Zero Stock Item", 0, 50.0, 100.0, "Test", "")
+    
+    # Get item ID
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT item_id FROM inventory WHERE sku = ?", ("SALE-ZERO",))
+    item_id = c.fetchone()[0]
+    conn.close()
+    
+    # Try to sell 1 unit when inventory is zero
+    items = [(item_id, 1, 100.0, 50.0)]
+    sale_id = models.create_sale("Customer", items)
+    
+    # Should fail
+    assert sale_id is None, "Sale should be rejected when inventory is zero"
+    
+    # Verify inventory still zero
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT quantity FROM inventory WHERE item_id = ?", (item_id,))
+    qty = c.fetchone()[0]
+    conn.close()
+    
+    assert qty == 0, "Inventory should remain zero after rejected sale"
+
+
+@pytest.mark.unit
 def test_create_sale_validates_empty_customer_name(test_db):
     """Test that empty customer names are rejected"""
     # Add inventory item

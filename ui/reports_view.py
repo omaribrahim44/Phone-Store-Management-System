@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ui/reports_view.py
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # modules/models.py
 from .db import get_conn
 from datetime import datetime

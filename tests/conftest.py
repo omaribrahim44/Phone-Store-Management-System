@@ -68,8 +68,10 @@ def test_db(test_db_dir, monkeypatch):
     CREATE TABLE IF NOT EXISTS sales (
         sale_id INTEGER PRIMARY KEY AUTOINCREMENT,
         sale_date TEXT,
+        customer_id INTEGER,
         customer_name TEXT,
-        total_amount REAL
+        total_amount REAL,
+        FOREIGN KEY(customer_id) REFERENCES customers(customer_id)
     )""")
     
     c.execute("""
@@ -88,6 +90,7 @@ def test_db(test_db_dir, monkeypatch):
     CREATE TABLE IF NOT EXISTS repair_orders (
         repair_id INTEGER PRIMARY KEY AUTOINCREMENT,
         order_number TEXT UNIQUE,
+        customer_id INTEGER,
         customer_name TEXT,
         customer_phone TEXT,
         device_model TEXT,
@@ -98,7 +101,8 @@ def test_db(test_db_dir, monkeypatch):
         status TEXT DEFAULT 'Received',
         technician TEXT,
         total_estimate REAL DEFAULT 0,
-        notes TEXT
+        notes TEXT,
+        FOREIGN KEY(customer_id) REFERENCES customers(customer_id)
     )""")
     
     c.execute("""

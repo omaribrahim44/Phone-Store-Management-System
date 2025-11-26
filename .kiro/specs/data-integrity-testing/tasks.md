@@ -34,7 +34,9 @@
   - **Property 1: Non-negative inventory quantities**
   - **Validates: Requirements 1.1**
 
-- [ ] 3. Enhance validation module
+- [x] 3. Enhance validation module
+
+
   - Create ValidationResult dataclass in modules/validators.py
   - Implement validate_price() to reject negative values
   - Implement validate_quantity() to reject negative values
@@ -54,12 +56,16 @@
 
   - **Validates: Requirements 4.3**
 
+
+
 - [ ] 3.2 Write property test for phone number validation
   - **Property 12: Phone number format validation**
   - **Validates: Requirements 4.5**
 
 
 - [x] 3.3 Write property test for password complexity
+
+
 
 
 
@@ -78,6 +84,10 @@
 
 
 
+
+
+
+
 - [ ] 4.1 Write property test for transaction rollback
   - **Property 10: Transaction rollback completeness**
   - **Validates: Requirements 3.4**
@@ -91,7 +101,12 @@
 
   - _Requirements: 1.1, 4.1, 4.2, 4.3, 4.4_
 
+
+
 - [x] 5.1 Write property test for inventory decrease matching sales
+
+
+
 
   - **Property 2: Inventory decrease matches sales**
 
@@ -100,6 +115,8 @@
 
 - [ ] 5.2 Write property test for sale rollback
   - **Property 3: Sale rollback restores inventory**
+
+
   - **Validates: Requirements 1.4**
 
 
@@ -109,7 +126,13 @@
 
   - Implement rollback on any failure during sale creation
   - Add inventory availability check before sale
+
+
   - _Requirements: 1.2, 1.3, 1.4, 3.1, 3.3_
+
+
+
+
 
 
 - [ ] 6.1 Write property test for sale total calculation
@@ -117,24 +140,36 @@
 
   - **Validates: Requirements 2.1**
 
+
+
 - [x] 6.2 Write property test for sale atomicity
 
   - **Property 8: Sale atomicity**
+
+
   - **Validates: Requirements 3.1, 3.3**
 
 
-- [ ] 6.3 Write unit test for zero inventory prevention
+- [x] 6.3 Write unit test for zero inventory prevention
+
+
   - Test that sales are rejected when inventory quantity is zero
   - _Requirements: 1.3_
 
 
-- [ ] 7. Refactor repair operations with validation and transactions
+
+- [x] 7. Refactor repair operations with validation and transactions
+
   - Update create_repair_order() to use transactions
   - Add validation for all repair inputs
+
 
   - Ensure repair_history entry is created atomically with order
   - Update add_repair_part() to recalculate total_estimate
   - _Requirements: 5.1, 5.2, 3.2_
+
+
+
 
 
 - [ ] 7.1 Write property test for repair total calculation
@@ -146,11 +181,19 @@
   - **Property 9: Repair order atomicity**
 
 
+
   - **Validates: Requirements 3.2**
+
 
 - [ ] 7.3 Write property test for status change logging
   - **Property 13: Status change logging**
+
   - **Validates: Requirements 5.1**
+
+
+
+
+
 
 - [ ] 7.4 Write property test for repair total consistency
   - **Property 14: Repair total consistency**
@@ -219,6 +262,7 @@
 - [ ] 11.1 Write property test for repair creation audit
   - **Property 24: Repair creation audit**
   - **Validates: Requirements 8.1**
+
 
 - [ ] 11.2 Write property test for status change audit
   - **Property 25: Status change audit**
@@ -294,6 +338,8 @@
   - Implement restore rollback on failure
   - Fix backup retention to respect max_backups configuration
   - Ensure backup timestamp is recorded in config
+
+
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
 - [ ] 14.1 Write property test for backup file validity

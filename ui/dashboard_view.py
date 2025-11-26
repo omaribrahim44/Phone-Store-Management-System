@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ui/dashboard_view.py
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
@@ -22,6 +23,10 @@ class DashboardFrame:
         self.auto_refresh_enabled = tb.BooleanVar(value=False)
         self.refresh_job = None
 
+        # --- Backup Reminder Notification ---
+        self.backup_notification = None
+        self.check_backup_reminder()
+        
         # --- Header with Controls ---
         header_frame = tb.Frame(self.frame)
         header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 30))
@@ -470,3 +475,127 @@ class DashboardFrame:
                 font=("Segoe UI", 10),
                 bootstyle="danger"
             ).pack(expand=True)
+
+    
+    def check_backup_reminder(self):
+        """Check if backup reminder should be shown"""
+        try:
+            import config
+            from datetime import datetime, timedelta
+            
+            cfg = config.load_config()
+            backup_cfg = cfg.get("backup", {})
+            last_backup = backup_cfg.get("last_backup_date")
+            
+            show_reminder = False
+            days_since_backup = None
+            
+            if not last_backup:
+                show_reminder = True
+                days_since_backup = "Never"
+            else:
+                try:
+                    last_backup_dt = datetime.fromisoformat(last_backup)
+                    days_since = (datetime.now() - last_backup_dt).days
+                    days_since_backup = days_since
+                    
+                    # Show reminder if more than 7 days
+                    if days_since >= 7:
+                        show_reminder = True
+                except:
+                    show_reminder = True
+                    days_since_backup = "Unknown"
+            
+            if show_reminder:
+                self.show_backup_reminder(days_since_backup)
+                
+        except Exception as e:
+            print(f"Error checking backup reminder: {e}")
+    
+    def show_backup_reminder(self, days_since):
+        """Show backup reminder notification"""
+        # Create notification frame
+        notification = tb.Frame(self.frame, bootstyle="warning", padding=15)
+        notification.grid(row=0, column=0, sticky="ew", pady=(0, 20))
+        notification.columnconfigure(1, weight=1)
+        
+        # Warning icon and message
+        tb.Label(
+            notification,
+            text="⚠️",
+            font=("Segoe UI", 24),
+            bootstyle="warning-inverse"
+        ).grid(row=0, column=0, padx=(0, 15))
+        
+        # Message
+        if days_since == "Never":
+            message = "No backup found! Please backup your data to prevent loss."
+        elif days_since == "Unknown":
+            message = "Backup status unknown. Please backup your data."
+        else:
+            message = f"Last backup was {days_since} days ago. Please backup your data."
+        
+        tb.Label(
+            notification,
+            text=message,
+            font=("Segoe UI", 12, "bold"),
+            bootstyle="warning-inverse"
+        ).grid(row=0, column=1, sticky="w")
+        
+        # Backup button
+        tb.Button(
+            notification,
+            text="💾 Backup Now",
+            bootstyle="success",
+            command=self.backup_now,
+            width=15
+        ).grid(row=0, column=2, padx=10)
+        
+        # Dismiss button
+        tb.Button(
+            notification,
+            text="✖ Dismiss",
+            bootstyle="warning-outline",
+            command=lambda: notification.grid_forget(),
+            width=12
+        ).grid(row=0, column=3)
+        
+        self.backup_notification = notification
+    
+    def backup_now(self):
+        """Create backup immediately"""
+        try:
+            from modules.backup_manager import create_backup
+            
+            # Show progress
+            if self.backup_notification:
+                for widget in self.backup_notification.winfo_children():
+                    if isinstance(widget, tb.Button) and "Backup Now" in widget.cget("text"):
+                        widget.configure(text="⏳ Creating...", state="disabled")
+            
+            # Create backup
+            backup_path = create_backup()
+            
+            if backup_path:
+                messagebox.showinfo(
+                    "✓ Backup Complete",
+                    f"Backup created successfully!\n\nSaved to: {backup_path}\n\nYour data is now safe."
+                )
+                
+                # Hide notification
+                if self.backup_notification:
+                    self.backup_notification.grid_forget()
+                    self.backup_notification = None
+            else:
+                messagebox.showerror(
+                    "Backup Failed",
+                    "Could not create backup. Please check logs for details."
+                )
+                
+                # Re-enable button
+                if self.backup_notification:
+                    for widget in self.backup_notification.winfo_children():
+                        if isinstance(widget, tb.Button):
+                            widget.configure(text="💾 Backup Now", state="normal")
+        except Exception as e:
+            messagebox.showerror("Error", f"Backup failed: {e}")

@@ -1,8 +1,16 @@
+# -*- coding: utf-8 -*-
 # app.py
 """Entry point for the Shop Manager desktop application."""
 
 # Standard imports
+import sys
 import config
+
+# Ensure UTF-8 encoding for Arabic and international characters
+if sys.version_info[0] >= 3:
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Local imports
 from modules.backup_manager import auto_backup_check
