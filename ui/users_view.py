@@ -339,6 +339,10 @@ class UsersFrame:
 
     def filter_users(self):
         """Filter users based on search and role filter"""
+        # Check if tree exists (might be called before tree is created)
+        if not hasattr(self, 'tree'):
+            return
+        
         # Clear tree
         for item in self.tree.get_children():
             self.tree.delete(item)
