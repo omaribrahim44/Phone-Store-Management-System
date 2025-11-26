@@ -39,7 +39,6 @@ def clean_all_data():
             ('repair_orders', 'repair orders'),
             ('customers', 'customers'),
             ('inventory', 'inventory items'),
-            ('audit_log', 'audit logs'),
         ]
         
         for table, description in tables_to_clean:
@@ -86,8 +85,7 @@ def clean_specific_data():
         'sales': 'Sales Records',
         'customers': 'Customers',
         'repair_orders': 'Repair Orders',
-        'users': 'Users (except admin)',
-        'audit_log': 'Audit Logs'
+        'users': 'Users (except admin)'
     }
     
     for table, name in tables.items():
@@ -141,10 +139,6 @@ def clean_specific_data():
         if counts['users'] > 0:
             if input(f"Delete {counts['users']} non-admin users? (y/n): ").lower() == 'y':
                 to_delete.append(('users_non_admin', 'non-admin users'))
-        
-        if counts['audit_log'] > 0:
-            if input(f"Delete {counts['audit_log']} audit logs? (y/n): ").lower() == 'y':
-                to_delete.append(('audit_log', 'audit logs'))
         
         if to_delete:
             confirm = input(f"\n⚠️  Confirm deletion of {len(to_delete)} categories? (yes/no): ").lower()
@@ -206,10 +200,13 @@ def show_database_stats():
     user_count = cursor.fetchone()[0]
     print(f"Users: {user_count} accounts")
     
-    # Audit logs
-    cursor.execute("SELECT COUNT(*) FROM audit_log")
-    log_count = cursor.fetchone()[0]
-    print(f"Audit Logs: {log_count} entries")
+    # Audit logs (optional table)
+    try:
+        cursor.execute("SELECT COUNT(*) FROM audit_log")
+        log_count = cursor.fetchone()[0]
+        print(f"Audit Logs: {log_count} entries")
+    except:
+        pass  # Table doesn't exist, skip it
     
     print("=" * 50)
     
