@@ -61,17 +61,20 @@ class SalesFrame:
         
         cols = ("id", "sku", "name", "stock", "price")
         self.inv_tree = ttk.Treeview(inv_frame, columns=cols, show="headings", height=20)
-        self.inv_tree.heading("id", text="ID")
-        self.inv_tree.heading("sku", text="SKU")
-        self.inv_tree.heading("name", text="Product Name")
-        self.inv_tree.heading("stock", text="Stock")
-        self.inv_tree.heading("price", text="Price")
         
+        # Center-align all headers
+        self.inv_tree.heading("id", text="ID", anchor="center")
+        self.inv_tree.heading("sku", text="SKU", anchor="center")
+        self.inv_tree.heading("name", text="Product Name", anchor="center")
+        self.inv_tree.heading("stock", text="Stock", anchor="center")
+        self.inv_tree.heading("price", text="Price", anchor="center")
+        
+        # Center-align all columns with adjusted widths
         self.inv_tree.column("id", width=50, anchor="center")
-        self.inv_tree.column("sku", width=100, anchor="w")
-        self.inv_tree.column("name", width=250, anchor="w")
-        self.inv_tree.column("stock", width=80, anchor="center")
-        self.inv_tree.column("price", width=100, anchor="e")
+        self.inv_tree.column("sku", width=120, anchor="center")
+        self.inv_tree.column("name", width=200, anchor="center")  # Reduced from 250
+        self.inv_tree.column("stock", width=150, anchor="center")  # Increased from 80
+        self.inv_tree.column("price", width=120, anchor="center")
         
         self.inv_tree.grid(row=0, column=0, sticky="nsew")
         
@@ -338,7 +341,7 @@ class SalesFrame:
                 stock_display = f"✓ {available_stock}" + (f" ({qty_in_cart} in cart)" if qty_in_cart > 0 else "")
                 tag = "in_stock"
             
-            self.inv_tree.insert("", "end", values=(row[0], row[1], row[2], stock_display, f"EGP {sell_price:.2f}"), tags=(tag,))
+            self.inv_tree.insert("", "end", values=(row[0], row[1], row[2], stock_display, f"{sell_price:.2f}"), tags=(tag,))
 
     def clear_customer_data(self):
         """Clear customer fields except phone"""
