@@ -107,7 +107,7 @@ def start_app(theme_name="flatly"):
         users = None
         try:
             users = UsersFrame(nb)
-            nb.add(users.frame, text="Users")
+            nb.add(users.frame, text="👥 Users")
         except Exception as e:
             print(f"Error loading Users: {e}")
             import traceback

@@ -348,15 +348,15 @@ class InventoryFrame:
         """Professional add item dialog with validation and better UX"""
         win = tb.Toplevel(self.frame)
         win.title("Add New Inventory Item")
-        win.geometry("620x650")
+        win.geometry("800x700")  # Increased width from 620 to 800
         win.resizable(True, True)
-        win.minsize(600, 600)
+        win.minsize(750, 650)  # Increased minimum width
         
         # Center the window
         win.update_idletasks()
-        x = (win.winfo_screenwidth() // 2) - (620 // 2)
-        y = (win.winfo_screenheight() // 2) - (650 // 2)
-        win.geometry(f"620x650+{x}+{y}")
+        x = (win.winfo_screenwidth() // 2) - (800 // 2)  # Updated for new width
+        y = (win.winfo_screenheight() // 2) - (700 // 2)  # Updated for new height
+        win.geometry(f"800x700+{x}+{y}")
         
         # Header
         header = tb.Frame(win, bootstyle="primary", padding=20)
@@ -387,11 +387,60 @@ class InventoryFrame:
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
         
-        canvas.create_window((0, 0), window=form_container, anchor="nw")
+        canvas_window = canvas.create_window((0, 0), window=form_container, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Make the canvas window expand to fill the canvas width
+        def on_canvas_configure(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+        
+        canvas.bind("<Configure>", on_canvas_configure)
         
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+        
+        # Mouse wheel scrolling functions (defined early, bound later after widgets are created)
+        def on_mousewheel(event):
+            # Windows and MacOS
+            if event.delta:
+                canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            # Linux
+            elif event.num == 4:
+                canvas.yview_scroll(-1, "units")
+            elif event.num == 5:
+                canvas.yview_scroll(1, "units")
+        
+        # Recursively bind mousewheel to all widgets
+        def bind_to_mousewheel(widget):
+            try:
+                widget.bind("<MouseWheel>", on_mousewheel)  # Windows/MacOS
+                widget.bind("<Button-4>", on_mousewheel)    # Linux scroll up
+                widget.bind("<Button-5>", on_mousewheel)    # Linux scroll down
+            except:
+                pass  # Some widgets may not support binding
+            
+            # Recursively bind to all children
+            for child in widget.winfo_children():
+                bind_to_mousewheel(child)
+        
+        def unbind_from_mousewheel(widget):
+            try:
+                widget.unbind("<MouseWheel>")
+                widget.unbind("<Button-4>")
+                widget.unbind("<Button-5>")
+            except:
+                pass
+            
+            # Recursively unbind from all children
+            for child in widget.winfo_children():
+                unbind_from_mousewheel(child)
+        
+        # Clean up on window destroy
+        def on_destroy():
+            unbind_from_mousewheel(win)
+            win.destroy()
+        
+        win.protocol("WM_DELETE_WINDOW", on_destroy)
         
         # Create form fields with better styling
         def create_field(parent, label_text, is_required=False, field_type="entry", options=None):
@@ -673,6 +722,7 @@ class InventoryFrame:
             # Save item
             if InventoryController.add_item(sku, name, qty, buy, sell, category, desc):
                 messagebox.showinfo("✓ Success", f"Item '{name}' has been added to inventory!")
+                unbind_mousewheel(None)  # Clean up mouse wheel bindings
                 win.destroy()
                 self.refresh()
                 # Notify ALL views that inventory changed
@@ -683,9 +733,6 @@ class InventoryFrame:
                     text="❌ Could not add item. SKU might already exist.",
                     bootstyle="danger"
                 )
-        
-        def cancel():
-            win.destroy()
         
         tb.Button(
             button_frame, 
@@ -699,12 +746,15 @@ class InventoryFrame:
             button_frame, 
             text="✖ Cancel", 
             bootstyle="secondary",
-            command=cancel,
+            command=on_destroy,
             width=15
         ).pack(side="right", padx=5)
         
+        # Bind mouse wheel scrolling to all widgets in the dialog (after all widgets are created)
+        bind_to_mousewheel(win)
+        
         # Focus on first field
-        e_sku.focus()
+        barcode_entry.focus()
 
     def delete_selected_item(self):
         """Delete the selected inventory item with confirmation"""

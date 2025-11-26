@@ -710,80 +710,224 @@ class SalesFrame:
         # Create success dialog
         dialog = tb.Toplevel(self.frame)
         dialog.title("Sale Completed Successfully")
-        dialog.geometry("500x400")
-        dialog.resizable(False, False)
+        dialog.geometry("650x550")  # Increased size for better visibility
+        dialog.resizable(True, True)
+        dialog.minsize(600, 500)
         
         # Center dialog
         dialog.update_idletasks()
-        x = (dialog.winfo_screenwidth() // 2) - (500 // 2)
-        y = (dialog.winfo_screenheight() // 2) - (400 // 2)
-        dialog.geometry(f"500x400+{x}+{y}")
+        x = (dialog.winfo_screenwidth() // 2) - (650 // 2)
+        y = (dialog.winfo_screenheight() // 2) - (550 // 2)
+        dialog.geometry(f"650x550+{x}+{y}")
         
         # Make dialog modal
         dialog.transient(self.frame)
         dialog.grab_set()
         
-        # Success header
-        header = tb.Frame(dialog, bootstyle="success", padding=20)
+        # Success header - More prominent
+        header = tb.Frame(dialog, bootstyle="success", padding=25)
         header.pack(fill="x")
         
         # Success icon and message
-        tb.Label(
+        icon_label = tb.Label(
             header,
-            text="✅",
-            font=("Segoe UI", 48),
+            text="✓",
+            font=("Segoe UI", 72, "bold"),  # Larger checkmark
             bootstyle="success-inverse"
-        ).pack()
+        )
+        icon_label.pack()
         
         tb.Label(
             header,
             text="Sale Completed Successfully!",
-            font=("Segoe UI", 18, "bold"),
+            font=("Segoe UI", 22, "bold"),  # Larger text
             bootstyle="success-inverse"
-        ).pack(pady=(10, 0))
+        ).pack(pady=(15, 5))
         
-        # Sale details
-        details_frame = tb.Frame(dialog, padding=30)
-        details_frame.pack(fill="both", expand=True)
+        tb.Label(
+            header,
+            text="Transaction has been recorded in the system",
+            font=("Segoe UI", 11),
+            bootstyle="success-inverse"
+        ).pack()
         
-        # Sale information
-        info_frame = tb.Labelframe(details_frame, text="Sale Information", padding=15)
+        # Scrollable content area
+        content_container = tb.Frame(dialog)
+        content_container.pack(fill="both", expand=True)
+        
+        # Create canvas for scrolling
+        canvas = tb.Canvas(content_container, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(content_container, orient="vertical", command=canvas.yview)
+        details_frame = tb.Frame(canvas, padding=30)
+        
+        details_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas_window = canvas.create_window((0, 0), window=details_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Make canvas expand to fill width
+        def on_canvas_configure(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+        
+        canvas.bind("<Configure>", on_canvas_configure)
+        
+        # Enable mouse wheel scrolling
+        def on_mousewheel(event):
+            if event.delta:
+                canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            elif event.num == 4:
+                canvas.yview_scroll(-1, "units")
+            elif event.num == 5:
+                canvas.yview_scroll(1, "units")
+        
+        def bind_to_mousewheel(widget):
+            try:
+                widget.bind("<MouseWheel>", on_mousewheel)
+                widget.bind("<Button-4>", on_mousewheel)
+                widget.bind("<Button-5>", on_mousewheel)
+            except:
+                pass
+            for child in widget.winfo_children():
+                bind_to_mousewheel(child)
+        
+        def unbind_from_mousewheel(widget):
+            try:
+                widget.unbind("<MouseWheel>")
+                widget.unbind("<Button-4>")
+                widget.unbind("<Button-5>")
+            except:
+                pass
+            for child in widget.winfo_children():
+                unbind_from_mousewheel(child)
+        
+        canvas.pack(side="left", fill="both", expand=True, padx=(10, 0), pady=10)
+        scrollbar.pack(side="right", fill="y", padx=(0, 10), pady=10)
+        
+        # Sale information card
+        info_frame = tb.Labelframe(
+            details_frame, 
+            text="  📋 Sale Information  ", 
+            padding=20,
+            bootstyle="info"
+        )
         info_frame.pack(fill="x", pady=(0, 20))
         
         info_grid = tb.Frame(info_frame)
         info_grid.pack(fill="x")
         info_grid.columnconfigure(1, weight=1)
         
-        # Sale ID
-        tb.Label(info_grid, text="Sale ID:", font=("Segoe UI", 11, "bold")).grid(row=0, column=0, sticky="w", pady=5)
-        tb.Label(info_grid, text=f"#{sale_id}", font=("Segoe UI", 11)).grid(row=0, column=1, sticky="w", padx=(10, 0))
+        # Sale ID with styling
+        id_frame = tb.Frame(info_grid)
+        id_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 15))
+        
+        tb.Label(
+            id_frame,
+            text="Sale ID:",
+            font=("Segoe UI", 12, "bold")
+        ).pack(side="left")
+        
+        tb.Label(
+            id_frame,
+            text=f"#{sale_id}",
+            font=("Segoe UI", 20, "bold"),
+            bootstyle="info"
+        ).pack(side="left", padx=(10, 0))
+        
+        ttk.Separator(info_grid, orient="horizontal").grid(row=1, column=0, columnspan=2, sticky="ew", pady=15)
         
         # Customer
-        tb.Label(info_grid, text="Customer:", font=("Segoe UI", 11, "bold")).grid(row=1, column=0, sticky="w", pady=5)
-        tb.Label(info_grid, text=customer_name, font=("Segoe UI", 11)).grid(row=1, column=1, sticky="w", padx=(10, 0))
+        tb.Label(
+            info_grid,
+            text="👤 Customer:",
+            font=("Segoe UI", 12, "bold")
+        ).grid(row=2, column=0, sticky="w", pady=8)
         
-        # Total
-        tb.Label(info_grid, text="Total Amount:", font=("Segoe UI", 11, "bold")).grid(row=2, column=0, sticky="w", pady=5)
+        tb.Label(
+            info_grid,
+            text=customer_name,
+            font=("Segoe UI", 12)
+        ).grid(row=2, column=1, sticky="w", padx=(15, 0), pady=8)
+        
+        # Total Amount - Highlighted
+        tb.Label(
+            info_grid,
+            text="💰 Total Amount:",
+            font=("Segoe UI", 12, "bold")
+        ).grid(row=3, column=0, sticky="w", pady=8)
+        
         tb.Label(
             info_grid,
             text=f"EGP {total:,.2f}",
-            font=("Segoe UI", 14, "bold"),
+            font=("Segoe UI", 18, "bold"),
             bootstyle="success"
-        ).grid(row=2, column=1, sticky="w", padx=(10, 0))
+        ).grid(row=3, column=1, sticky="w", padx=(15, 0), pady=8)
         
         # Date/Time
-        tb.Label(info_grid, text="Date/Time:", font=("Segoe UI", 11, "bold")).grid(row=3, column=0, sticky="w", pady=5)
+        tb.Label(
+            info_grid,
+            text="📅 Date/Time:",
+            font=("Segoe UI", 12, "bold")
+        ).grid(row=4, column=0, sticky="w", pady=8)
+        
         tb.Label(
             info_grid,
             text=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            font=("Segoe UI", 11)
-        ).grid(row=3, column=1, sticky="w", padx=(10, 0))
+            font=("Segoe UI", 12)
+        ).grid(row=4, column=1, sticky="w", padx=(15, 0), pady=8)
         
-        # Buttons frame
-        buttons_frame = tb.Frame(details_frame)
-        buttons_frame.pack(fill="x", pady=(10, 0))
-        buttons_frame.columnconfigure(0, weight=1)
-        buttons_frame.columnconfigure(1, weight=1)
+        # Items summary card
+        items_frame = tb.Labelframe(
+            details_frame,
+            text="  📦 Items Summary  ",
+            padding=20,
+            bootstyle="secondary"
+        )
+        items_frame.pack(fill="x", pady=(0, 20))
+        
+        items_summary = tb.Frame(items_frame)
+        items_summary.pack(fill="x")
+        items_summary.columnconfigure(0, weight=1)
+        items_summary.columnconfigure(1, weight=1)
+        items_summary.columnconfigure(2, weight=1)
+        
+        # Total items
+        tb.Label(
+            items_summary,
+            text="Total Items:",
+            font=("Segoe UI", 11, "bold")
+        ).grid(row=0, column=0, sticky="w", pady=5)
+        
+        tb.Label(
+            items_summary,
+            text=str(len(receipt_items)),
+            font=("Segoe UI", 14, "bold"),
+            bootstyle="info"
+        ).grid(row=1, column=0, sticky="w")
+        
+        # Total quantity
+        total_qty = sum(item[1] for item in receipt_items)
+        tb.Label(
+            items_summary,
+            text="Total Quantity:",
+            font=("Segoe UI", 11, "bold")
+        ).grid(row=0, column=1, sticky="w", pady=5, padx=(20, 0))
+        
+        tb.Label(
+            items_summary,
+            text=str(total_qty),
+            font=("Segoe UI", 14, "bold"),
+            bootstyle="warning"
+        ).grid(row=1, column=1, sticky="w", padx=(20, 0))
+        
+        # Buttons frame - Fixed at bottom
+        buttons_container = tb.Frame(dialog, padding=20)
+        buttons_container.pack(fill="x", side="bottom")
+        
+        buttons_frame = tb.Frame(buttons_container)
+        buttons_frame.pack()
         
         def print_receipt():
             """Generate and print receipt"""
@@ -795,39 +939,60 @@ class SalesFrame:
                 # Open PDF
                 try:
                     os.startfile(pdf_path)
-                    messagebox.showinfo("Receipt", f"Receipt opened successfully!\n\nSaved to: {pdf_path}")
+                    messagebox.showinfo(
+                        "Receipt Generated", 
+                        f"✓ Receipt opened successfully!\n\nSaved to:\n{pdf_path}"
+                    )
                 except Exception as e:
-                    messagebox.showinfo("Receipt Saved", f"Receipt saved to:\n{pdf_path}\n\nPlease open it manually.")
+                    messagebox.showinfo(
+                        "Receipt Saved", 
+                        f"✓ Receipt saved successfully!\n\nLocation:\n{pdf_path}\n\nPlease open it manually."
+                    )
                 
             except Exception as e:
                 messagebox.showerror("Receipt Error", f"Could not generate receipt:\n{e}")
         
         def close_dialog():
             """Close the dialog"""
+            unbind_from_mousewheel(dialog)
             dialog.destroy()
         
         # Print Receipt button (primary action)
         tb.Button(
             buttons_frame,
-            text="🖨️ Print Receipt",
+            text="🖨️  Print Receipt",
             bootstyle="primary",
             command=print_receipt,
-            width=20
-        ).grid(row=0, column=0, padx=5, pady=5, ipady=10)
+            width=22
+        ).pack(side="left", padx=8, ipady=12)
         
         # Close button
         tb.Button(
             buttons_frame,
-            text="✓ Close",
-            bootstyle="success-outline",
+            text="✓  Close",
+            bootstyle="success",
             command=close_dialog,
-            width=20
-        ).grid(row=0, column=1, padx=5, pady=5, ipady=10)
+            width=22
+        ).pack(side="left", padx=8, ipady=12)
         
         # Info message
+        info_container = tb.Frame(buttons_container)
+        info_container.pack(fill="x", pady=(15, 0))
+        
         tb.Label(
-            details_frame,
-            text="💡 You can print the receipt now or close and continue with next sale",
-            font=("Segoe UI", 9, "italic"),
-            foreground="#6c757d"
-        ).pack(pady=(15, 0))
+            info_container,
+            text="💡 Tip: You can print the receipt now or close and continue with the next sale",
+            font=("Segoe UI", 10, "italic"),
+            foreground="#6c757d",
+            wraplength=550,
+            justify="center"
+        ).pack()
+        
+        # Bind mouse wheel after all widgets are created
+        bind_to_mousewheel(dialog)
+        
+        # Close on Escape key
+        dialog.bind("<Escape>", lambda e: close_dialog())
+        
+        # Handle window close
+        dialog.protocol("WM_DELETE_WINDOW", close_dialog)
