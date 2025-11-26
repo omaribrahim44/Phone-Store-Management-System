@@ -640,13 +640,13 @@ class RepairsFrame:
         tb.Label(info_grid, text="IMEI:", font=("Segoe UI", 11, "bold")).grid(row=2, column=2, sticky="w", padx=(30, 10), pady=8)
         tb.Label(info_grid, text=order[5] if len(order) > 5 else "N/A", font=("Segoe UI", 11)).grid(row=2, column=3, sticky="w", padx=5, pady=8)
 
-        # Parts section with professional styling
-        parts_frame = tb.Labelframe(win, text="🔧 Parts & Services", padding=20, bootstyle="secondary")
-        parts_frame.pack(fill="both", expand=True, padx=20, pady=(0, 15))
+        # Parts section with professional styling - REDUCED HEIGHT
+        parts_frame = tb.Labelframe(win, text="🔧 Parts & Services", padding=15, bootstyle="secondary")
+        parts_frame.pack(fill="x", padx=20, pady=(0, 15))  # Changed from fill="both", expand=True to fill="x"
         
-        # Parts table with better columns and styling
+        # Parts table with better columns and styling - SMALLER HEIGHT
         cols = ("id", "name", "qty", "unit_price", "cost_price", "line_total", "profit")
-        pt = ttk.Treeview(parts_frame, columns=cols, show="headings", height=12)
+        pt = ttk.Treeview(parts_frame, columns=cols, show="headings", height=6)  # Reduced from 12 to 6
         
         # Enhanced table styling
         style = ttk.Style()
