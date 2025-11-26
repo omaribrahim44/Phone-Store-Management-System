@@ -243,14 +243,19 @@ def generate_receipt_pdf(order, parts, history, filename=None):
 def generate_sales_receipt_pdf(sale_data, items, filename=None):
     """
     Generates a highly professional sales receipt PDF.
-    sale_data: tuple (sale_id, date, cust_name, subtotal, discount, total)
-    items: list of tuples (name, qty, price, total)
+    sale_data: dict with keys: sale_id, date_time, customer_name, customer_phone, customer_email, 
+               customer_address, subtotal, discount_percent, discount_amount, grand_total, payment_method, notes
+    items: list of tuples (sku, name, qty, price, total)
     """
     cfg = config.load_config()
     shop_info = cfg.get("shop_info", config.DEFAULT_SHOP_INFO)
     
     if not filename:
-        filename = f"sale_receipt_{sale_data[0]}.pdf"
+        # Create receipts directory if it doesn't exist
+        receipts_dir = "receipts"
+        if not os.path.exists(receipts_dir):
+            os.makedirs(receipts_dir)
+        filename = os.path.join(receipts_dir, f"sale_receipt_{sale_data['sale_id']}.pdf")
     
     c = canvas.Canvas(filename, pagesize=A4)
     width, height = A4
@@ -289,12 +294,14 @@ def generate_sales_receipt_pdf(sale_data, items, filename=None):
     # Sale details
     c.setFillColor(colors.black)
     c.setFont("Helvetica-Bold", 11)
-    c.drawString(2.5*cm, y-0.7*cm, f"Receipt #: {sale_data[0]}")
-    c.drawRightString(width-2.5*cm, y-0.7*cm, f"Date: {sale_data[1]}")
+    c.drawString(2.5*cm, y-0.7*cm, f"Receipt #: {sale_data['sale_id']}")
+    c.drawRightString(width-2.5*cm, y-0.7*cm, f"Date: {sale_data['date_time']}")
     
     c.setFont("Helvetica", 10)
-    c.drawString(2.5*cm, y-1.2*cm, f"Customer: {sale_data[2]}")
-    c.drawRightString(width-2.5*cm, y-1.2*cm, f"Cashier: Admin")
+    c.drawString(2.5*cm, y-1.2*cm, f"Customer: {sale_data['customer_name']}")
+    if sale_data.get('customer_phone'):
+        c.drawString(2.5*cm, y-1.6*cm, f"Phone: {sale_data['customer_phone']}")
+    c.drawRightString(width-2.5*cm, y-1.2*cm, f"Payment: {sale_data.get('payment_method', 'Cash')}")
     
     # === ITEMS TABLE ===
     y -= 3*cm
@@ -305,17 +312,19 @@ def generate_sales_receipt_pdf(sale_data, items, filename=None):
     y -= 0.8*cm
     
     # Prepare table data
-    data = [["Description", "Qty", "Unit Price", "Amount"]]
+    data = [["SKU", "Description", "Qty", "Unit Price", "Amount"]]
     for item in items:
+        # item: (sku, name, qty, price, total)
         data.append([
-            str(item[0])[:50],  # Truncate long names
-            str(int(item[1])),
-            f"{shop_info.get('currency', 'EGP')} {item[2]:,.2f}",
-            f"{shop_info.get('currency', 'EGP')} {item[3]:,.2f}"
+            str(item[0])[:15],  # SKU
+            str(item[1])[:40],  # Product name truncated
+            str(int(item[2])),  # Qty
+            f"{shop_info.get('currency', 'EGP')} {item[3]:,.2f}",  # Price
+            f"{shop_info.get('currency', 'EGP')} {item[4]:,.2f}"  # Total
         ])
     
     # Create professional table
-    t = Table(data, colWidths=[11*cm, 2*cm, 3*cm, 3*cm])
+    t = Table(data, colWidths=[2.5*cm, 8*cm, 2*cm, 3*cm, 3*cm])
     t.setStyle(TableStyle([
         # Header styling
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2C5282')),
@@ -364,14 +373,14 @@ def generate_sales_receipt_pdf(sale_data, items, filename=None):
     line_y = y - 0.6*cm
     # Subtotal
     c.drawString(summary_box_x + 0.6*cm, line_y, "Subtotal:")
-    c.drawRightString(summary_box_x + summary_box_width - 0.6*cm, line_y, f"{shop_info.get('currency', 'EGP')} {sale_data[3]:,.2f}")
+    c.drawRightString(summary_box_x + summary_box_width - 0.6*cm, line_y, f"{shop_info.get('currency', 'EGP')} {sale_data['subtotal']:,.2f}")
     
     # Discount (if any)
-    if sale_data[4] > 0:
+    if sale_data.get('discount_amount', 0) > 0:
         line_y -= 0.6*cm
         c.setFillColor(colors.HexColor('#E53E3E'))
-        c.drawString(summary_box_x + 0.6*cm, line_y, "Discount:")
-        c.drawRightString(summary_box_x + summary_box_width - 0.6*cm, line_y, f"- {shop_info.get('currency', 'EGP')} {sale_data[4]:,.2f}")
+        c.drawString(summary_box_x + 0.6*cm, line_y, f"Discount ({sale_data.get('discount_percent', 0)}%):")
+        c.drawRightString(summary_box_x + summary_box_width - 0.6*cm, line_y, f"- {shop_info.get('currency', 'EGP')} {sale_data['discount_amount']:,.2f}")
         c.setFillColor(colors.black)
     
     # Separator line
@@ -385,12 +394,12 @@ def generate_sales_receipt_pdf(sale_data, items, filename=None):
     c.setFillColor(colors.HexColor('#2C5282'))
     c.setFont("Helvetica-Bold", 14)
     c.drawString(summary_box_x + 0.6*cm, line_y, "TOTAL:")
-    c.drawRightString(summary_box_x + summary_box_width - 0.6*cm, line_y, f"{shop_info.get('currency', 'EGP')} {sale_data[5]:,.2f}")
+    c.drawRightString(summary_box_x + summary_box_width - 0.6*cm, line_y, f"{shop_info.get('currency', 'EGP')} {sale_data['grand_total']:,.2f}")
     
     # === QR CODE ===
     if HAS_QR:
         try:
-            qr_data = f"Sale: #{sale_data[0]}\\nCustomer: {sale_data[2]}\\nDate: {sale_data[1]}\\nTotal: {sale_data[5]:.2f} {shop_info.get('currency', 'EGP')}"
+            qr_data = f"Sale: #{sale_data['sale_id']}\\nCustomer: {sale_data['customer_name']}\\nDate: {sale_data['date_time']}\\nTotal: {sale_data['grand_total']:.2f} {shop_info.get('currency', 'EGP')}"
             qr = qrcode.make(qr_data)
             qr.save("temp_qr.png")
             c.drawImage("temp_qr.png", 2.5*cm, 3*cm, width=3*cm, height=3*cm)
@@ -422,65 +431,4 @@ def generate_sales_receipt_pdf(sale_data, items, filename=None):
     return filename
 
 
-def generate_sales_receipt_pdf(sale, items, filename=None):
-    """
-    Generates a professional sales receipt PDF.
-    sale: tuple (sale_id, date, cust_name, total)
-    items: list of tuples (name, qty, price, total_line)
-    """
-    cfg = config.load_config()
-    shop_info = cfg.get("shop_info", config.DEFAULT_SHOP_INFO)
-    
-    if not filename:
-        filename = f"sale_{sale[0]}.pdf"
-        
-    c = canvas.Canvas(filename, pagesize=A4)
-    width, height = A4
-    
-    # --- Header ---
-    c.setFont("Helvetica-Bold", 16)
-    c.drawRightString(width-2*cm, height-2.5*cm, shop_info.get("name", "Phone Shop"))
-    c.setFont("Helvetica", 10)
-    c.drawRightString(width-2*cm, height-3*cm, shop_info.get("address", ""))
-    c.drawRightString(width-2*cm, height-3.5*cm, f"Tel: {shop_info.get('phone', '')}")
-    
-    c.setFont("Helvetica-Bold", 20)
-    c.drawString(2*cm, height-3.5*cm, "SALES RECEIPT")
-    
-    # --- Info ---
-    y = height - 5.5*cm
-    c.setFont("Helvetica", 10)
-    c.drawString(2*cm, y, f"Customer: {sale[2]}")
-    c.drawString(11*cm, y, f"Sale #: {sale[0]}")
-    y -= 0.5*cm
-    c.drawString(11*cm, y, f"Date: {sale[1]}")
-    
-    # --- Items Table ---
-    y -= 2*cm
-    data = [["Item", "Qty", "Price", "Total"]]
-    for item in items:
-        # item: name, qty, price, total
-        data.append([item[0], str(item[1]), f"{item[2]:.2f}", f"{item[3]:.2f}"])
-        
-    t = Table(data, colWidths=[9*cm, 2*cm, 3*cm, 3*cm])
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.black),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('ALIGN', (0,1), (0,-1), 'LEFT'),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('GRID', (0,0), (-1,-1), 1, colors.black),
-    ]))
-    t.wrapOn(c, width, height)
-    t.drawOn(c, 2*cm, y - (len(data)*0.8*cm))
-    
-    # --- Footer ---
-    y_footer = y - (len(data)*0.8*cm) - 2*cm
-    c.setFont("Helvetica-Bold", 12)
-    c.drawRightString(width-2*cm, y_footer, f"TOTAL: {shop_info.get('currency', 'EGP')} {sale[3]:,.2f}")
-    
-    c.setFont("Helvetica", 10)
-    c.drawString(2*cm, y_footer-2*cm, "Thank you for your business!")
-    
-    c.save()
-    return filename
+# This duplicate function has been removed - use the enhanced version above
