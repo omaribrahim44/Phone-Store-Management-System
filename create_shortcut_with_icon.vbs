@@ -17,8 +17,7 @@ shortcutPath = desktopPath & "\Phone Management System.lnk"
 Set shortcut = WshShell.CreateShortcut(shortcutPath)
 
 ' Set properties
-shortcut.TargetPath = "pythonw.exe"
-shortcut.Arguments = """" & currentDir & "\app.py"""
+shortcut.TargetPath = currentDir & "\START_APPLICATION.bat"
 shortcut.WorkingDirectory = currentDir
 shortcut.Description = "Phone Management System - Shop Management Application"
 shortcut.WindowStyle = 1
@@ -27,9 +26,6 @@ shortcut.WindowStyle = 1
 iconPath = currentDir & "\app_icon.ico"
 If fso.FileExists(iconPath) Then
     shortcut.IconLocation = iconPath & ",0"
-Else
-    ' Use Python icon as fallback
-    shortcut.IconLocation = "pythonw.exe,0"
 End If
 
 ' Save shortcut

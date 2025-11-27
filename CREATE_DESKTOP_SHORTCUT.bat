@@ -1,27 +1,21 @@
 @echo off
 REM Create Desktop Shortcut for Phone Management System
+REM This creates a shortcut on the desktop with the app icon
 
-echo Creating desktop shortcut...
+echo.
+echo ========================================
+echo   Creating Desktop Shortcut
+echo ========================================
+echo.
 
-set SCRIPT_DIR=%~dp0
-set SHORTCUT_NAME=Phone Management System.lnk
-set TARGET=%SCRIPT_DIR%START_APPLICATION.bat
-set DESKTOP=%USERPROFILE%\Desktop
+REM Use PowerShell to create the shortcut
+powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $desktopPath = [Environment]::GetFolderPath('Desktop'); $currentDir = Get-Location; $shortcutPath = \"$desktopPath\Phone Management System.lnk\"; $shortcut = $WshShell.CreateShortcut($shortcutPath); $shortcut.TargetPath = \"$currentDir\START_APPLICATION.bat\"; $shortcut.WorkingDirectory = \"$currentDir\"; $shortcut.Description = 'Phone Management System'; $shortcut.IconLocation = \"$currentDir\app_icon.ico,0\"; $shortcut.Save()"
 
-REM Create VBS script to create shortcut
-echo Set oWS = WScript.CreateObject("WScript.Shell") > CreateShortcut.vbs
-echo sLinkFile = "%DESKTOP%\%SHORTCUT_NAME%" >> CreateShortcut.vbs
-echo Set oLink = oWS.CreateShortcut(sLinkFile) >> CreateShortcut.vbs
-echo oLink.TargetPath = "%TARGET%" >> CreateShortcut.vbs
-echo oLink.WorkingDirectory = "%SCRIPT_DIR%" >> CreateShortcut.vbs
-echo oLink.Description = "Phone Management System - Shop Management Application" >> CreateShortcut.vbs
-echo oLink.Save >> CreateShortcut.vbs
-
-REM Execute VBS script
-cscript CreateShortcut.vbs
-
-REM Clean up
-del CreateShortcut.vbs
+if errorlevel 1 (
+    echo ❌ Failed to create shortcut
+    pause
+    exit /b 1
+)
 
 echo.
 echo ========================================
