@@ -7,14 +7,17 @@ A comprehensive desktop application for managing mobile phone shop operations in
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success.svg)](https://github.com/omaribrahim44/Phone-Store-Management-System)
 [![Tests](https://img.shields.io/badge/Tests-148%20Passing-success.svg)](tests/)
 
-## 🚀 Quick Start (15 Minutes Setup)
+## 🚀 Quick Start (5 Minutes Setup)
 
-### **For Client PC:**
+### **For Windows Users (Easiest Method):**
 1. **Install Python** from [python.org](https://www.python.org/downloads/) (✅ Check "Add Python to PATH")
 2. **Download** this project (Code → Download ZIP)
-3. **Extract** to `C:\PhoneManagementSystem`
-4. **Double-click** `QUICK_SETUP.bat`
-5. **Done!** Desktop shortcut created with professional icon
+3. **Extract** to any folder (e.g., `C:\PhoneManagementSystem`)
+4. **Double-click** `INSTALL_AND_RUN.bat` ⭐
+5. **Done!** Application installs, creates desktop shortcut, and launches automatically
+
+### **From Now On:**
+- Just double-click the **"Phone Management System"** icon on your desktop!
 
 ### **Login:**
 - Username: `admin`

@@ -1,27 +1,28 @@
 # Installation Guide
 
-## For Windows Users (Easiest Method)
+## For Windows Users (Easiest Method) ⭐
 
-### Quick Install (5 Minutes)
+### One-Click Install (5 Minutes)
 
 1. **Download the Repository**
    - Click the green "Code" button on GitHub
    - Select "Download ZIP"
-   - Extract to `C:\PhoneManagementSystem` (or any location)
+   - Extract to any folder (e.g., `C:\PhoneManagementSystem`)
 
 2. **Install Python** (if not already installed)
    - Download from [python.org](https://www.python.org/downloads/)
    - **IMPORTANT**: Check "Add Python to PATH" during installation
    - Restart your computer after installation
 
-3. **Run Quick Setup**
-   - Double-click `QUICK_SETUP.bat`
+3. **Run One-Click Installer**
+   - Double-click `INSTALL_AND_RUN.bat` ⭐
    - Wait for installation to complete (2-3 minutes)
    - Desktop shortcut will be created automatically
+   - Application will start automatically
 
-4. **Start the Application**
-   - Double-click the desktop shortcut "Phone Management System"
-   - Or double-click `START_APPLICATION.bat`
+4. **From Now On**
+   - Just double-click the desktop shortcut "Phone Management System"
+   - The installer detects if already installed and just launches the app
 
 5. **Login**
    - Username: `admin`
