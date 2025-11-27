@@ -13,6 +13,16 @@ REM Check if already installed by looking for shop.db
 if exist "shop.db" (
     echo ✅ Application already installed!
     echo.
+    
+    REM Check if desktop shortcut exists, create if missing
+    set "shortcutPath=%USERPROFILE%\Desktop\Phone Management System.lnk"
+    if not exist "%shortcutPath%" (
+        echo Creating desktop shortcut...
+        powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $desktopPath = [Environment]::GetFolderPath('Desktop'); $currentDir = Get-Location; $shortcutPath = \"$desktopPath\Phone Management System.lnk\"; $shortcut = $WshShell.CreateShortcut($shortcutPath); $shortcut.TargetPath = \"$currentDir\INSTALL_AND_RUN.bat\"; $shortcut.WorkingDirectory = \"$currentDir\"; $shortcut.Description = 'Phone Management System'; $shortcut.IconLocation = \"$currentDir\app_icon.ico,0\"; $shortcut.Save()"
+        echo ✅ Desktop shortcut created
+        echo.
+    )
+    
     echo Starting application...
     echo.
     python app.py
