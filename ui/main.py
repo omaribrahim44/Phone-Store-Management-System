@@ -11,10 +11,14 @@ from ui.sales_view import SalesFrame  # Changed from pos_view
 from ui.reports_view import ReportsFrame
 from ui.settings_view import SettingsFrame
 from ui.logs_view import LogsFrame
+from ui.login_view import show_login
 
 from ui.styles import apply_styles
+from modules import session
+from modules.permissions import has_permission
 
 def start_app(theme_name="flatly"):
+    """Start the main application after successful login"""
     try:
         # Apply styles (creates Window/Style internally or we use it to configure)
         # ttkbootstrap's Window creates a style, so we might need to adjust
@@ -24,7 +28,11 @@ def start_app(theme_name="flatly"):
         from ui.styles import apply_styles
         apply_styles(theme_name)
 
-        app.title("Shop Manager - Modern UI")
+        # Get current user info
+        user = session.get_current_user()
+        user_display = f"{user['full_name']} ({user['role']})" if user else "Guest"
+        
+        app.title(f"Phone Management System - {user_display}")
         app.geometry("1150x750")
 
         nb = tb.Notebook(app, bootstyle="primary")

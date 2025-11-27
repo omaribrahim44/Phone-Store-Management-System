@@ -73,10 +73,12 @@ The Phone Management System currently lacks automated testing and formal correct
 #### Acceptance Criteria
 
 1. WHEN a repair status changes THEN the System SHALL record the change in repair history
-2. WHEN parts are added to a repair THEN the System SHALL update the repair total estimate
+2. WHEN parts are added to a repair THEN the System SHALL update the repair total estimate immediately
 3. WHEN a repair is marked completed THEN the System SHALL ensure all required fields are populated
 4. WHEN repair history is queried THEN the System SHALL return entries in chronological order
 5. WHEN a repair is deleted THEN the System SHALL also delete associated parts and history
+6. WHEN a part is added to a repair THEN the System SHALL link the part to the repair order atomically
+7. WHEN a repair checkout is saved THEN the System SHALL generate a checkout receipt
 
 ### Requirement 6: Backup and Restore Integrity
 

@@ -54,6 +54,26 @@ class LogsFrame:
         cols = ("log_id", "timestamp", "user", "action", "entity", "entity_id", "description")
         self.tree = ttk.Treeview(self.frame, columns=cols, show="headings", height=15)
         
+        # Configure professional table styling
+        style = ttk.Style()
+        style.configure("Treeview",
+                       font=("Segoe UI", 10),
+                       rowheight=35,
+                       background="#FFFFFF",
+                       fieldbackground="#FFFFFF",
+                       borderwidth=0)
+        style.configure("Treeview.Heading",
+                       font=("Segoe UI", 10, "bold"),
+                       padding=10,
+                       background="#2C5282",
+                       foreground="white",
+                       borderwidth=0,
+                       relief="flat")
+        style.map("Treeview.Heading", background=[("active", "#3182CE")])
+        style.map("Treeview",
+                 background=[("selected", "#3182CE")],
+                 foreground=[("selected", "white")])
+        
         widths = {"log_id": 60, "timestamp": 150, "user": 120, "action": 120, "entity": 100, "entity_id": 80, "description": 400}
         alignments = {"log_id": "center", "timestamp": "w", "user": "w", "action": "center", "entity": "w", "entity_id": "center", "description": "w"}
         for c in cols:

@@ -80,8 +80,8 @@ echo.
 echo ========================================
 echo   Need Help?
 echo ========================================
-echo   • Read: HOW_TO_RUN.md
-echo   • Read: DEPLOYMENT_TO_SHOP_PC.md
+echo   • Read: QUICK_START.md
 echo   • Read: README.md
+echo   • Read: CONTRIBUTING.md
 echo.
 pause

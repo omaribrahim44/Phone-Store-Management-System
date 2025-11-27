@@ -108,17 +108,25 @@ class CustomersFrame:
         cols = ("icon", "id", "name", "phone", "email", "type", "purchases", "repairs", "spent", "last_activity")
         self.tree = ttk.Treeview(table_frame, columns=cols, show="headings", height=20)
         
-        # Configure tree style for better appearance
+        # Configure tree style with professional appearance
         style = ttk.Style()
         style.configure("Treeview",
-                       font=("Segoe UI", 11),
+                       font=("Segoe UI", 10),  # Professional readable font
                        rowheight=35,
                        background="#FFFFFF",
-                       fieldbackground="#FFFFFF")
+                       fieldbackground="#FFFFFF",
+                       borderwidth=0)
         style.configure("Treeview.Heading",
-                       font=("Segoe UI", 12, "bold"),
+                       font=("Segoe UI", 10, "bold"),  # Clear, readable headers
                        padding=10,
-                       background="#E8E8E8")
+                       background="#2C5282",  # Professional blue
+                       foreground="white",
+                       borderwidth=0,
+                       relief="flat")
+        style.map("Treeview.Heading", background=[("active", "#3182CE")])  # Lighter blue on hover
+        style.map("Treeview",
+                 background=[("selected", "#3182CE")],
+                 foreground=[("selected", "white")])
 
         # Column configuration with wider columns to fill screen
         widths = {

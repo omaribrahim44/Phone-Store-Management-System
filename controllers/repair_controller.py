@@ -76,3 +76,46 @@ class RepairController:
                 description=f"Status changed from {old_status} to {new_status}"
             )
         return success
+
+    
+    @staticmethod
+    def delete_repair(repair_id, user="System"):
+        """
+        Delete a repair order and all associated data.
+        
+        Args:
+            repair_id: The repair order ID to delete
+            user: User performing the deletion (for audit log)
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        # Get repair details before deletion for logging
+        try:
+            order, _, _ = models.get_repair_details(repair_id)
+            if order:
+                order_number = order[1] if len(order) > 1 else "Unknown"
+                customer_name = order[2] if len(order) > 2 else "Unknown"
+                device_model = order[4] if len(order) > 4 else "Unknown"
+            else:
+                order_number = "Unknown"
+                customer_name = "Unknown"
+                device_model = "Unknown"
+        except:
+            order_number = "Unknown"
+            customer_name = "Unknown"
+            device_model = "Unknown"
+        
+        # Delete the repair order (cascade will handle parts and history)
+        success = models.delete_repair_order(repair_id)
+        
+        if success:
+            log_action(
+                user=user,
+                action_type="DELETE",
+                entity_type="repair",
+                entity_id=repair_id,
+                description=f"Deleted repair order {order_number} - Customer: {customer_name}, Device: {device_model}"
+            )
+        
+        return success

@@ -106,6 +106,27 @@ class DashboardFrame:
         
         cols = ("name", "qty", "revenue", "profit")
         self.best_tree = ttk.Treeview(best_frame, columns=cols, show="headings", height=12)
+        
+        # Configure professional table styling
+        style = ttk.Style()
+        style.configure("Treeview",
+                       font=("Segoe UI", 10),
+                       rowheight=35,
+                       background="#FFFFFF",
+                       fieldbackground="#FFFFFF",
+                       borderwidth=0)
+        style.configure("Treeview.Heading",
+                       font=("Segoe UI", 10, "bold"),
+                       padding=10,
+                       background="#2C5282",
+                       foreground="white",
+                       borderwidth=0,
+                       relief="flat")
+        style.map("Treeview.Heading", background=[("active", "#3182CE")])
+        style.map("Treeview",
+                 background=[("selected", "#3182CE")],
+                 foreground=[("selected", "white")])
+        
         self.best_tree.heading("name", text="Item Name", anchor="w")
         self.best_tree.heading("qty", text="Qty", anchor="center")
         self.best_tree.heading("revenue", text="Revenue", anchor="e")
@@ -208,6 +229,10 @@ class DashboardFrame:
         
         # Use after to allow UI to update
         self.frame.after(10, self._do_refresh)
+    
+    def refresh_data(self, *args):
+        """Alias for refresh to support event manager callbacks"""
+        self.refresh()
     
     def _do_refresh(self):
         """Actual refresh logic"""

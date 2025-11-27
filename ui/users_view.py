@@ -222,6 +222,26 @@ class UsersFrame:
             height=15
         )
         
+        # Configure professional table styling
+        style = ttk.Style()
+        style.configure("Treeview",
+                       font=("Segoe UI", 10),
+                       rowheight=35,
+                       background="#FFFFFF",
+                       fieldbackground="#FFFFFF",
+                       borderwidth=0)
+        style.configure("Treeview.Heading",
+                       font=("Segoe UI", 10, "bold"),
+                       padding=10,
+                       background="#2C5282",
+                       foreground="white",
+                       borderwidth=0,
+                       relief="flat")
+        style.map("Treeview.Heading", background=[("active", "#3182CE")])
+        style.map("Treeview",
+                 background=[("selected", "#3182CE")],
+                 foreground=[("selected", "white")])
+        
         # Column configuration
         widths = {"id": 50, "username": 180, "full_name": 220, "role": 120, "created_at": 180, "actions": 200}
         labels = {"id": "ID", "username": "👤 Username", "full_name": "📝 Full Name", "role": "🎭 Role", "created_at": "📅 Created At", "actions": "⚙️ Actions"}

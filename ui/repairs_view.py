@@ -95,7 +95,7 @@ class RepairsFrame:
         tb.Label(form_frame, text="Device Model").grid(row=1, column=0, sticky="w", padx=5, pady=5)
         self.model = tb.Entry(form_frame); self.model.grid(row=1, column=1, sticky="ew", padx=5)
         
-        tb.Label(form_frame, text="IMEI / SN").grid(row=1, column=2, sticky="w", padx=5)
+        tb.Label(form_frame, text="IMEI / SN (Optional)").grid(row=1, column=2, sticky="w", padx=5)
         imei_frame = tb.Frame(form_frame)
         imei_frame.grid(row=1, column=3, sticky="ew", padx=5)
         self.imei = tb.Entry(imei_frame)
@@ -129,37 +129,25 @@ class RepairsFrame:
         cols = ("id","order","customer","phone","model","imei","status","received")
         self.tree = ttk.Treeview(self.frame, columns=cols, show="headings", height=14)
         
-        # Configure tree style
-        style = ttk.Style()
-        style.configure("Treeview", 
-                       font=("Segoe UI", 11),
-                       rowheight=32,
-                       background="#FFFFFF",
-                       fieldbackground="#FFFFFF")
-        style.configure("Treeview.Heading",
-                       font=("Segoe UI", 12, "bold"),
-                       padding=10,
-                       background="#E8E8E8")
-        
         # Enhanced professional styling for table
         style = ttk.Style()
         style.configure("Treeview",
-                       rowheight=38,  # Larger rows for better readability
+                       rowheight=40,  # Even larger rows
                        font=("Segoe UI", 11),
                        background="#FFFFFF",
                        fieldbackground="#FFFFFF",
                        borderwidth=0)
         style.configure("Treeview.Heading",
-                       font=("Segoe UI", 11, "bold"),
-                       background="#2C5282",
+                       font=("Segoe UI", 11, "bold"),  # Professional font size
+                       background="#2C5282",  # Professional blue (matching detail window)
                        foreground="white",
-                       borderwidth=1,
+                       borderwidth=0,
                        relief="flat",
-                       padding=10)
+                       padding=10)  # Balanced padding
         style.map("Treeview.Heading",
-                 background=[("active", "#1A365D")])
+                 background=[("active", "#3182CE")])  # Lighter blue on hover
         style.map("Treeview",
-                 background=[("selected", "#4299E1")],
+                 background=[("selected", "#3182CE")],  # Slightly darker blue
                  foreground=[("selected", "white")])
         
         # headings with better labels and icons
@@ -193,24 +181,13 @@ class RepairsFrame:
         self.tree.bind("<Double-1>", lambda e: self._on_double_click())
         self._create_context_menu()
         
-        # Configure enhanced status tags with background colors
-        status_colors = {
-            "Received": {"bg": "#FFF5F5", "fg": "#C53030"},      # Light red bg, dark red text
-            "InProgress": {"bg": "#FFFAF0", "fg": "#DD6B20"},    # Light orange bg, dark orange text
-            "Completed": {"bg": "#F0FFF4", "fg": "#2F855A"},     # Light green bg, dark green text
-            "Delivered": {"bg": "#EBF8FF", "fg": "#2C5282"},     # Light blue bg, dark blue text
-            "Cancelled": {"bg": "#F7FAFC", "fg": "#718096"}      # Light gray bg, gray text
-        }
+        # Configure table tags with enhanced status and overdue highlighting
+        from ui.styles import configure_table_tags
+        configure_table_tags(self.tree, table_type="status")
         
-        for status, colors in status_colors.items():
-            self.tree.tag_configure(status, background=colors["bg"], foreground=colors["fg"])
-        
-        # Alternating row colors for better readability
+        # Additional alternating row colors
         self.tree.tag_configure("evenrow", background="#FFFFFF")
         self.tree.tag_configure("oddrow", background="#F8F9FA")
-        
-        # Overdue tag (red background with white text)
-        self.tree.tag_configure("overdue", background="#FEB2B2", foreground="#742A2A", font=("Segoe UI", 11, "bold"))
 
         # Footer actions
         footer = tb.Frame(self.frame); footer.grid(row=4, column=0, sticky="ew", pady=(6,0))
@@ -472,6 +449,8 @@ class RepairsFrame:
             
         self.menu.add_separator()
         self.menu.add_command(label="Export Selected (TXT)", command=self.export_selected_txt)
+        self.menu.add_separator()
+        self.menu.add_command(label="🗑️ Delete Repair Order", command=self.delete_selected)
         self.tree.bind("<Button-3>", lambda e: self._show_menu(e))
 
     def _show_menu(self, event):
@@ -582,6 +561,64 @@ class RepairsFrame:
                 event_manager.notify('repair_updated', {'action': 'status_change', 'repair_id': rid, 'status': new_status})
             except Exception as e:
                 messagebox.showerror("Failed", str(e))
+    
+    def delete_selected(self):
+        """Delete the selected repair order with confirmation"""
+        rid = self._get_selected_id()
+        if not rid:
+            messagebox.showwarning("No Selection", "Please select a repair order to delete.")
+            return
+        
+        # Get repair details for confirmation message
+        try:
+            order, parts, history = RepairController.get_repair_details(rid)
+            if not order:
+                messagebox.showerror("Error", "Could not load repair order details.")
+                return
+            
+            order_number = order[1]
+            customer_name = order[2]
+            device_model = order[4]
+            status = order[6]
+            
+            # Show detailed confirmation dialog
+            confirm_msg = (
+                f"⚠️ Are you sure you want to DELETE this repair order?\n\n"
+                f"Order Number: {order_number}\n"
+                f"Customer: {customer_name}\n"
+                f"Device: {device_model}\n"
+                f"Status: {status}\n"
+                f"Parts: {len(parts)} item(s)\n"
+                f"History: {len(history)} record(s)\n\n"
+                f"⚠️ This action CANNOT be undone!\n"
+                f"All associated parts and history will be permanently deleted."
+            )
+            
+            if not messagebox.askyesno("⚠️ Confirm Deletion", confirm_msg, icon='warning'):
+                return
+            
+            # Double confirmation for safety
+            if not messagebox.askyesno("⚠️ Final Confirmation", 
+                                      f"This is your FINAL warning!\n\n"
+                                      f"Delete repair order #{order_number}?",
+                                      icon='warning'):
+                return
+            
+            # Perform deletion
+            success = RepairController.delete_repair(rid, user="SystemUser")
+            
+            if success:
+                messagebox.showinfo("✓ Deleted", f"Repair order #{order_number} has been deleted successfully.")
+                self.refresh()
+                
+                # Notify ALL views that repair was deleted
+                from modules.event_manager import event_manager
+                event_manager.notify('repair_deleted', {'action': 'delete', 'repair_id': rid})
+            else:
+                messagebox.showerror("❌ Error", "Failed to delete repair order. Please try again.")
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not delete repair order: {e}")
 
     # ---------- detail window ----------
     def open_detail_window(self, rid):
@@ -640,18 +677,39 @@ class RepairsFrame:
         tb.Label(info_grid, text="IMEI:", font=("Segoe UI", 11, "bold")).grid(row=2, column=2, sticky="w", padx=(30, 10), pady=8)
         tb.Label(info_grid, text=order[5] if len(order) > 5 else "N/A", font=("Segoe UI", 11)).grid(row=2, column=3, sticky="w", padx=5, pady=8)
 
-        # Parts section with professional styling - REDUCED HEIGHT
+        # Parts section with professional styling - COMPACT HEIGHT
         parts_frame = tb.Labelframe(win, text="🔧 Parts & Services", padding=15, bootstyle="secondary")
         parts_frame.pack(fill="x", padx=20, pady=(0, 15))  # Changed from fill="both", expand=True to fill="x"
         
-        # Parts table with better columns and styling - SMALLER HEIGHT
+        # Parts table with better columns and styling - COMPACT HEIGHT
         cols = ("id", "name", "qty", "unit_price", "cost_price", "line_total", "profit")
-        pt = ttk.Treeview(parts_frame, columns=cols, show="headings", height=6)  # Reduced from 12 to 6
+        pt = ttk.Treeview(parts_frame, columns=cols, show="headings", height=3)  # Reduced from 6 to 3 for better space distribution to 6
         
-        # Enhanced table styling
+        # Enhanced table styling - more compact with better colors
         style = ttk.Style()
-        style.configure("Treeview", rowheight=35, font=("Segoe UI", 10))
-        style.configure("Treeview.Heading", font=("Segoe UI", 10, "bold"), padding=8)
+        style.configure(
+            "Treeview",
+            rowheight=28,
+            font=("Segoe UI", 10),  # Increased from 9 to 10 for better readability
+            background="#FFFFFF",
+            fieldbackground="#FFFFFF",
+            borderwidth=0
+        )
+        style.configure(
+            "Treeview.Heading",
+            font=("Segoe UI", 10, "bold"),  # Increased from 9 to 10 for better readability
+            background="#2C5282",  # Professional blue color
+            foreground="white",
+            borderwidth=0,
+            relief="flat",
+            padding=8  # Increased from 6 to 8 for better spacing
+        )
+        style.map("Treeview.Heading", background=[("active", "#3182CE")])  # Lighter blue on hover
+        style.map(
+            "Treeview",
+            background=[("selected", "#3182CE")],
+            foreground=[("selected", "white")]
+        )
         
         # Configure columns with proper alignment and better widths
         headers = {
@@ -761,56 +819,56 @@ class RepairsFrame:
             else:
                 lbl_total_profit.configure(bootstyle="secondary")
         
-        # Enhanced Totals summary with better spacing
+        # Enhanced Totals summary with compact spacing
         totals_frame = tb.Frame(parts_frame)
-        totals_frame.pack(fill="x", pady=(15, 15))
+        totals_frame.pack(fill="x", pady=(10, 10))  # Reduced padding from 15 to 10
         
         # Three columns for totals
         totals_frame.columnconfigure(0, weight=1)
         totals_frame.columnconfigure(1, weight=1)
         totals_frame.columnconfigure(2, weight=1)
         
-        # Total Cost - Gray card
-        cost_card = tb.Frame(totals_frame, bootstyle="secondary", padding=15)
-        cost_card.grid(row=0, column=0, sticky="ew", padx=8)
-        tb.Label(cost_card, text="Total Cost", font=("Segoe UI", 11, "bold"), bootstyle="secondary-inverse").pack()
-        lbl_total_cost = tb.Label(cost_card, text="EGP 0.00", font=("Segoe UI", 16, "bold"), bootstyle="secondary-inverse")
-        lbl_total_cost.pack(pady=(5, 0))
+        # Total Cost - Gray card (compact)
+        cost_card = tb.Frame(totals_frame, bootstyle="secondary", padding=10)  # Reduced padding from 15 to 10
+        cost_card.grid(row=0, column=0, sticky="ew", padx=5)  # Reduced padx from 8 to 5
+        tb.Label(cost_card, text="Total Cost", font=("Segoe UI", 9, "bold"), bootstyle="secondary-inverse").pack()  # Reduced font from 11 to 9
+        lbl_total_cost = tb.Label(cost_card, text="EGP 0.00", font=("Segoe UI", 13, "bold"), bootstyle="secondary-inverse")  # Reduced font from 16 to 13
+        lbl_total_cost.pack(pady=(3, 0))  # Reduced pady from 5 to 3
         
-        # Total Revenue - Purple card
-        revenue_card = tb.Frame(totals_frame, bootstyle="info", padding=15)
-        revenue_card.grid(row=0, column=1, sticky="ew", padx=8)
-        tb.Label(revenue_card, text="Total Revenue", font=("Segoe UI", 11, "bold"), bootstyle="info-inverse").pack()
-        lbl_total_revenue = tb.Label(revenue_card, text="EGP 0.00", font=("Segoe UI", 16, "bold"), bootstyle="info-inverse")
-        lbl_total_revenue.pack(pady=(5, 0))
+        # Total Revenue - Purple card (compact)
+        revenue_card = tb.Frame(totals_frame, bootstyle="info", padding=10)  # Reduced padding from 15 to 10
+        revenue_card.grid(row=0, column=1, sticky="ew", padx=5)  # Reduced padx from 8 to 5
+        tb.Label(revenue_card, text="Total Revenue", font=("Segoe UI", 9, "bold"), bootstyle="info-inverse").pack()  # Reduced font from 11 to 9
+        lbl_total_revenue = tb.Label(revenue_card, text="EGP 0.00", font=("Segoe UI", 13, "bold"), bootstyle="info-inverse")  # Reduced font from 16 to 13
+        lbl_total_revenue.pack(pady=(3, 0))  # Reduced pady from 5 to 3
         
-        # Total Profit - Green card
-        profit_card = tb.Frame(totals_frame, bootstyle="success", padding=15)
-        profit_card.grid(row=0, column=2, sticky="ew", padx=8)
-        tb.Label(profit_card, text="Total Profit", font=("Segoe UI", 11, "bold"), bootstyle="success-inverse").pack()
-        lbl_total_profit = tb.Label(profit_card, text="EGP 0.00", font=("Segoe UI", 16, "bold"), bootstyle="success-inverse")
-        lbl_total_profit.pack(pady=(5, 0))
+        # Total Profit - Green card (compact)
+        profit_card = tb.Frame(totals_frame, bootstyle="success", padding=10)  # Reduced padding from 15 to 10
+        profit_card.grid(row=0, column=2, sticky="ew", padx=5)  # Reduced padx from 8 to 5
+        tb.Label(profit_card, text="Total Profit", font=("Segoe UI", 9, "bold"), bootstyle="success-inverse").pack()  # Reduced font from 11 to 9
+        lbl_total_profit = tb.Label(profit_card, text="EGP 0.00", font=("Segoe UI", 13, "bold"), bootstyle="success-inverse")  # Reduced font from 16 to 13
+        lbl_total_profit.pack(pady=(3, 0))  # Reduced pady from 5 to 3
         
-        # Add part form with better layout
-        add_part_frame = tb.Labelframe(parts_frame, text="➕ Add Part/Service", padding=15)
+        # Add part form with compact layout
+        add_part_frame = tb.Labelframe(parts_frame, text="➕ Add Part/Service", padding=10)  # Reduced padding from 15 to 10
         add_part_frame.pack(fill="x", pady=(0, 0))
         
         add_part_frame.columnconfigure(1, weight=3)
         add_part_frame.columnconfigure(3, weight=1)
         add_part_frame.columnconfigure(5, weight=1)
         
-        tb.Label(add_part_frame, text="Part Name:", font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w", padx=(0, 10), pady=8)
-        e_name = tb.Entry(add_part_frame, font=("Segoe UI", 11))
-        e_name.grid(row=0, column=1, sticky="ew", padx=5, pady=8)
+        tb.Label(add_part_frame, text="Part Name:", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w", padx=(0, 8), pady=5)  # Reduced font and padding
+        e_name = tb.Entry(add_part_frame, font=("Segoe UI", 10))  # Reduced font from 11 to 10
+        e_name.grid(row=0, column=1, sticky="ew", padx=5, pady=5)  # Reduced pady from 8 to 5
         
-        tb.Label(add_part_frame, text="Qty:", font=("Segoe UI", 10, "bold")).grid(row=0, column=2, sticky="w", padx=(15, 10), pady=8)
-        e_qty = tb.Entry(add_part_frame, font=("Segoe UI", 11), width=10)
-        e_qty.grid(row=0, column=3, sticky="ew", padx=5, pady=8)
+        tb.Label(add_part_frame, text="Qty:", font=("Segoe UI", 9, "bold")).grid(row=0, column=2, sticky="w", padx=(12, 8), pady=5)  # Reduced font and padding
+        e_qty = tb.Entry(add_part_frame, font=("Segoe UI", 10), width=10)  # Reduced font from 11 to 10
+        e_qty.grid(row=0, column=3, sticky="ew", padx=5, pady=5)  # Reduced pady from 8 to 5
         e_qty.insert(0, "1")
         
-        tb.Label(add_part_frame, text="Unit Price:", font=("Segoe UI", 10, "bold")).grid(row=0, column=4, sticky="w", padx=(15, 10), pady=8)
-        e_price = tb.Entry(add_part_frame, font=("Segoe UI", 11), width=15)
-        e_price.grid(row=0, column=5, sticky="ew", padx=5, pady=8)
+        tb.Label(add_part_frame, text="Unit Price:", font=("Segoe UI", 9, "bold")).grid(row=0, column=4, sticky="w", padx=(12, 8), pady=5)  # Reduced font and padding
+        e_price = tb.Entry(add_part_frame, font=("Segoe UI", 10), width=15)  # Reduced font from 11 to 10
+        e_price.grid(row=0, column=5, sticky="ew", padx=5, pady=5)  # Reduced pady from 8 to 5
         
         # Cost display (auto-fetched)
         cost_info = tb.Label(add_part_frame, text="", font=("Segoe UI", 9, "italic"), foreground="#6c757d")
@@ -915,9 +973,9 @@ class RepairsFrame:
             command=on_add_part
         ).grid(row=0, column=6, padx=10)
 
-        # Payment tracking section
-        payment_frame = tb.Labelframe(win, text="💳 Payment Tracking", padding=15, bootstyle="warning")
-        payment_frame.pack(fill="x", padx=15, pady=(0, 10))
+        # Payment tracking section (compact)
+        payment_frame = tb.Labelframe(win, text="💳 Payment Tracking", padding=10, bootstyle="warning")  # Reduced padding from 15 to 10
+        payment_frame.pack(fill="x", padx=20, pady=(0, 10))  # Changed padx from 15 to 20 for consistency
         
         payment_frame.columnconfigure(1, weight=1)
         payment_frame.columnconfigure(3, weight=1)
@@ -1026,9 +1084,9 @@ class RepairsFrame:
             command=record_payment
         ).grid(row=3, column=0, columnspan=4, pady=(10, 0), ipady=8)
         
-        # Status change section
-        status_frame = tb.Labelframe(win, text="📋 Update Status", padding=15, bootstyle="info")
-        status_frame.pack(fill="x", padx=15, pady=(0, 15))
+        # Status change section (compact)
+        status_frame = tb.Labelframe(win, text="📋 Update Status", padding=10, bootstyle="info")  # Reduced padding from 15 to 10
+        status_frame.pack(fill="x", padx=20, pady=(0, 15))  # Changed padx from 15 to 20 for consistency
         
         status_frame.columnconfigure(1, weight=1)
         status_frame.columnconfigure(3, weight=2)

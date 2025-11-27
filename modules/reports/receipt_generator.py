@@ -318,67 +318,77 @@ def generate_sales_receipt_pdf(sale_data, items, filename=None):
     
     y -= 1.8*cm
     
-    # Transaction details box
+    # Transaction details box - ENLARGED with better spacing
+    box_height = 3.2*cm  # Increased from 2.2cm
     c.setFillColor(colors.HexColor('#F7FAFC'))
     c.setStrokeColor(colors.HexColor('#CBD5E0'))
-    c.setLineWidth(1)
-    c.roundRect(2*cm, y-2.5*cm, width-4*cm, 2.2*cm, 0.3*cm, fill=1, stroke=1)
+    c.setLineWidth(1.5)
+    c.roundRect(2*cm, y-box_height, width-4*cm, box_height, 0.4*cm, fill=1, stroke=1)
     
-    # Transaction info - Left side
+    # Transaction info - Left side with better alignment
     c.setFillColor(colors.HexColor('#2D3748'))
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(2.5*cm, y-0.6*cm, "TRANSACTION DETAILS")
+    c.setFont("Helvetica-Bold", 11)  # Increased from 10
+    c.drawString(2.8*cm, y-0.7*cm, "TRANSACTION DETAILS")
     
+    # Date & Time
     c.setFillColor(colors.black)
-    c.setFont("Helvetica", 9)
-    c.drawString(2.5*cm, y-1*cm, f"Date & Time:")
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(4.5*cm, y-1*cm, sale_data['date_time'])
+    c.setFont("Helvetica", 10)  # Increased from 9
+    c.drawString(2.8*cm, y-1.2*cm, "Date & Time:")
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(5.5*cm, y-1.2*cm, sale_data['date_time'])
     
-    c.setFont("Helvetica", 9)
-    c.drawString(2.5*cm, y-1.4*cm, f"Payment Method:")
-    c.setFont("Helvetica-Bold", 9)
+    # Payment Method
+    c.setFont("Helvetica", 10)
+    c.drawString(2.8*cm, y-1.7*cm, "Payment Method:")
+    c.setFont("Helvetica-Bold", 10)
     payment_method = sale_data.get('payment_method', 'Cash')
-    c.drawString(4.5*cm, y-1.4*cm, payment_method)
+    c.drawString(5.5*cm, y-1.7*cm, payment_method)
     
-    c.setFont("Helvetica", 9)
-    c.drawString(2.5*cm, y-1.8*cm, f"Served By:")
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(4.5*cm, y-1.8*cm, "Cashier")
-    
-    # Customer info - Right side
-    right_x = width/2 + 0.5*cm
-    c.setFillColor(colors.HexColor('#2D3748'))
+    # Served By - using actual username from sale_data
+    c.setFont("Helvetica", 10)
+    c.drawString(2.8*cm, y-2.2*cm, "Served By:")
     c.setFont("Helvetica-Bold", 10)
-    c.drawString(right_x, y-0.6*cm, "CUSTOMER INFORMATION")
+    served_by = sale_data.get('served_by', sale_data.get('username', 'Cashier'))
+    c.drawString(5.5*cm, y-2.2*cm, served_by)
     
+    # Customer info - Right side with better alignment
+    right_x = width/2 + 1*cm  # Increased spacing
+    c.setFillColor(colors.HexColor('#2D3748'))
+    c.setFont("Helvetica-Bold", 11)  # Increased from 10
+    c.drawString(right_x, y-0.7*cm, "CUSTOMER INFORMATION")
+    
+    # Name
     c.setFillColor(colors.black)
-    c.setFont("Helvetica", 9)
-    c.drawString(right_x, y-1*cm, f"Name:")
-    c.setFont("Helvetica-Bold", 9)
-    customer_name = sale_data['customer_name'][:25]  # Truncate if too long
-    c.drawString(right_x + 2*cm, y-1*cm, customer_name)
+    c.setFont("Helvetica", 10)  # Increased from 9
+    c.drawString(right_x, y-1.2*cm, "Name:")
+    c.setFont("Helvetica-Bold", 10)
+    customer_name = sale_data['customer_name'][:30]  # Increased truncation limit
+    c.drawString(right_x + 2.2*cm, y-1.2*cm, customer_name)
     
+    # Phone
     if sale_data.get('customer_phone'):
-        c.setFont("Helvetica", 9)
-        c.drawString(right_x, y-1.4*cm, f"Phone:")
-        c.setFont("Helvetica-Bold", 9)
-        c.drawString(right_x + 2*cm, y-1.4*cm, sale_data['customer_phone'])
+        c.setFont("Helvetica", 10)
+        c.drawString(right_x, y-1.7*cm, "Phone:")
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(right_x + 2.2*cm, y-1.7*cm, sale_data['customer_phone'])
     
+    # Email
     if sale_data.get('customer_email'):
-        c.setFont("Helvetica", 9)
-        c.drawString(right_x, y-1.8*cm, f"Email:")
-        c.setFont("Helvetica-Bold", 8)
-        email = sale_data['customer_email'][:30]  # Truncate if too long
-        c.drawString(right_x + 2*cm, y-1.8*cm, email)
+        c.setFont("Helvetica", 10)
+        c.drawString(right_x, y-2.2*cm, "Email:")
+        c.setFont("Helvetica-Bold", 10)
+        email = sale_data['customer_email'][:35]  # Increased truncation limit
+        c.drawString(right_x + 2.2*cm, y-2.2*cm, email)
     
-    # Address if available
+    # Address if available - below the box
     if sale_data.get('customer_address'):
-        c.setFont("Helvetica", 8)
-        c.drawString(right_x, y-2.2*cm, f"Address: {sale_data['customer_address'][:35]}")
+        c.setFont("Helvetica", 9)
+        c.setFillColor(colors.HexColor('#718096'))
+        address_text = f"Address: {sale_data['customer_address'][:50]}"
+        c.drawString(right_x, y-2.8*cm, address_text)
     
     # === ENHANCED ITEMS TABLE ===
-    y -= 3.5*cm
+    y -= 4*cm  # Increased spacing to accommodate larger box
     
     # Section header with icon
     c.setFont("Helvetica-Bold", 13)
@@ -451,10 +461,10 @@ def generate_sales_receipt_pdf(sale_data, items, filename=None):
     # === ENHANCED FINANCIAL SUMMARY ===
     y = y - table_height - 2*cm
     
-    # Summary box with enhanced styling
+    # Summary box with enhanced styling - increased height for better spacing
     summary_box_width = 9*cm
     summary_box_x = width - 2*cm - summary_box_width
-    summary_box_height = 4*cm if sale_data.get('discount_amount', 0) > 0 else 3.2*cm
+    summary_box_height = 5*cm if sale_data.get('discount_amount', 0) > 0 else 4.2*cm  # Increased heights
     
     # Box with shadow effect
     c.setFillColor(colors.HexColor('#E2E8F0'))
@@ -503,17 +513,20 @@ def generate_sales_receipt_pdf(sale_data, items, filename=None):
     c.setLineWidth(2)
     c.line(summary_box_x + 0.8*cm, line_y, summary_box_x + summary_box_width - 0.8*cm, line_y)
     
-    # Grand Total - Highly Emphasized
-    line_y -= 0.8*cm
+    # Grand Total - Highly Emphasized with proper spacing
+    line_y -= 0.9*cm
     c.setFillColor(colors.HexColor('#1A365D'))
-    c.setFont("Helvetica-Bold", 15)
+    c.setFont("Helvetica-Bold", 13)  # Reduced from 15 to 13
     c.drawString(summary_box_x + 0.8*cm, line_y, "TOTAL AMOUNT:")
-    c.setFont("Helvetica-Bold", 18)
+    
+    # Amount on separate line for better readability
+    line_y -= 0.6*cm
+    c.setFont("Helvetica-Bold", 16)  # Reduced from 18 to 16
     c.setFillColor(colors.HexColor('#2C5282'))
-    c.drawRightString(summary_box_x + summary_box_width - 0.8*cm, line_y, f"{shop_info.get('currency', 'EGP')} {sale_data['grand_total']:,.2f}")
+    c.drawCentredString(summary_box_x + summary_box_width/2, line_y, f"{shop_info.get('currency', 'EGP')} {sale_data['grand_total']:,.2f}")
     
     # Payment method confirmation
-    line_y -= 0.5*cm
+    line_y -= 0.6*cm  # Increased spacing from 0.5cm to 0.6cm
     c.setFont("Helvetica", 9)
     c.setFillColor(colors.HexColor('#718096'))
     payment_text = f"Paid via {sale_data.get('payment_method', 'Cash')}"

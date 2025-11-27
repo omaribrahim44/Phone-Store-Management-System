@@ -376,13 +376,18 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ✅ **Production Ready** - Fully functional with comprehensive testing
 
-### Recent Updates
-- ✅ Complete UI/UX modernization
-- ✅ Unified customer management system
-- ✅ Enhanced data visualization
-- ✅ Property-based testing infrastructure
-- ✅ Comprehensive audit logging
-- ✅ Professional documentation
+### Recent Updates (v2.0)
+- ✅ Complete UI/UX modernization with ttkbootstrap
+- ✅ Unified customer management system with VIP tracking
+- ✅ Enhanced data visualization with donut charts
+- ✅ Property-based testing infrastructure with Hypothesis
+- ✅ Comprehensive audit logging for all operations
+- ✅ Barcode scanning and label printing support
+- ✅ Thermal receipt printer integration
+- ✅ Mobile phone specifications database
+- ✅ Quick-add templates for faster data entry
+- ✅ IMEI field now optional for repair orders
+- ✅ Automatic part linking and checkout receipts for repairs
 
 ## 🐛 Bug Reports
 

@@ -11,30 +11,30 @@ def apply_professional_table_style():
     """
     style = ttk.Style()
     
-    # Main table styling
+    # Main table styling - improved readability
     style.configure("Treeview",
-                   rowheight=38,  # Larger rows for better readability
-                   font=("Segoe UI", 11),
+                   rowheight=35,  # Balanced row height
+                   font=("Segoe UI", 10),  # Professional readable font
                    background="#FFFFFF",
                    fieldbackground="#FFFFFF",
                    borderwidth=0)
     
-    # Header styling
+    # Header styling - modern professional blue
     style.configure("Treeview.Heading",
-                   font=("Segoe UI", 11, "bold"),
-                   background="#2C5282",
+                   font=("Segoe UI", 10, "bold"),  # Clear, readable headers
+                   background="#2C5282",  # Professional blue
                    foreground="white",
-                   borderwidth=1,
+                   borderwidth=0,
                    relief="flat",
                    padding=10)
     
-    # Header hover effect
+    # Header hover effect - lighter blue
     style.map("Treeview.Heading",
-             background=[("active", "#1A365D")])
+             background=[("active", "#3182CE")])
     
-    # Selection styling
+    # Selection styling - consistent blue theme
     style.map("Treeview",
-             background=[("selected", "#4299E1")],
+             background=[("selected", "#3182CE")],
              foreground=[("selected", "white")])
     
     return style

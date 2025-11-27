@@ -70,7 +70,9 @@ def update_user_password(user_id: int, new_plain: str) -> bool:
         conn.close()
 
 # ---------------- inventory ----------------
-def add_inventory_item(sku: str, name: str, qty: int, buy: float, sell: float, category: str, desc: str = "") -> bool:
+def add_inventory_item(sku: str, name: str, qty: int, buy: float, sell: float, category: str, desc: str = "",
+                       storage: str = None, ram: str = None, color: str = None, condition: str = None,
+                       brand: str = None, model: str = None, warranty_months: int = None) -> bool:
     """
     Add an inventory item with validation and transaction support.
     
@@ -82,6 +84,13 @@ def add_inventory_item(sku: str, name: str, qty: int, buy: float, sell: float, c
         sell: Sell price (non-negative)
         category: Item category
         desc: Optional description
+        storage: Phone storage (e.g., "128GB")
+        ram: Phone RAM (e.g., "8GB")
+        color: Phone color
+        condition: Item condition (New, Used, etc.)
+        brand: Phone brand
+        model: Phone model
+        warranty_months: Warranty period in months
     
     Returns:
         True if successful, False otherwise
@@ -126,8 +135,12 @@ def add_inventory_item(sku: str, name: str, qty: int, buy: float, sell: float, c
         with transaction() as conn:
             c = conn.cursor()
             c.execute(
-                "INSERT INTO inventory (sku, name, category, description, quantity, buy_price, sell_price) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (sku, name, category, desc, qty, buy, sell)
+                """INSERT INTO inventory 
+                   (sku, name, category, description, quantity, buy_price, sell_price,
+                    storage, ram, color, condition, brand, model, warranty_months) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (sku, name, category, desc, qty, buy, sell,
+                 storage, ram, color, condition, brand, model, warranty_months)
             )
         return True
     except Exception as e:
@@ -135,7 +148,7 @@ def add_inventory_item(sku: str, name: str, qty: int, buy: float, sell: float, c
         return False
 
 
-def update_inventory_item(item_id: int, sku: str, name: str, category: str, qty: int, buy_price: float, sell_price: float, description: str = None) -> bool:
+def update_inventory_item(item_id: int, sku: str, name: str, category: str, qty: int, buy_price: float, sell_price: float, description: str = None, storage: str = None, ram: str = None, color: str = None) -> bool:
     """
     Update an inventory item.
     
@@ -148,6 +161,9 @@ def update_inventory_item(item_id: int, sku: str, name: str, category: str, qty:
         buy_price: Buy price
         sell_price: Sell price
         description: Optional description
+        storage: Optional mobile storage specification
+        ram: Optional mobile RAM specification
+        color: Optional mobile color specification
     
     Returns:
         True if successful, False otherwise
@@ -180,16 +196,30 @@ def update_inventory_item(item_id: int, sku: str, name: str, category: str, qty:
     try:
         with transaction() as conn:
             c = conn.cursor()
+            # Build dynamic query based on what's provided
+            query = "UPDATE inventory SET sku=?, name=?, category=?, quantity=?, buy_price=?, sell_price=?"
+            params = [sku, name, category, qty, buy_price, sell_price]
+            
             if description is not None:
-                c.execute(
-                    "UPDATE inventory SET sku=?, name=?, category=?, quantity=?, buy_price=?, sell_price=?, description=? WHERE item_id=?",
-                    (sku, name, category, qty, buy_price, sell_price, description, item_id)
-                )
-            else:
-                c.execute(
-                    "UPDATE inventory SET sku=?, name=?, category=?, quantity=?, buy_price=?, sell_price=? WHERE item_id=?",
-                    (sku, name, category, qty, buy_price, sell_price, item_id)
-                )
+                query += ", description=?"
+                params.append(description)
+            
+            if storage is not None:
+                query += ", storage=?"
+                params.append(storage)
+            
+            if ram is not None:
+                query += ", ram=?"
+                params.append(ram)
+            
+            if color is not None:
+                query += ", color=?"
+                params.append(color)
+            
+            query += " WHERE item_id=?"
+            params.append(item_id)
+            
+            c.execute(query, tuple(params))
         return True
     except Exception as e:
         print("update_inventory_item error:", e)
@@ -198,14 +228,16 @@ def update_inventory_item(item_id: int, sku: str, name: str, category: str, qty:
 
 def get_inventory():
     """
-    Get all inventory items.
+    Get all inventory items with phone specifications.
     
     Returns:
-        List of tuples: (item_id, sku, name, category, quantity, buy_price, sell_price)
+        List of tuples: (item_id, sku, name, category, quantity, buy_price, sell_price, storage, ram, color, condition, brand, model, warranty_months)
     """
     conn = get_conn()
     c = conn.cursor()
-    c.execute("SELECT item_id, sku, name, category, quantity, buy_price, sell_price FROM inventory")
+    c.execute("""SELECT item_id, sku, name, category, quantity, buy_price, sell_price, 
+                        storage, ram, color, condition, brand, model, warranty_months 
+                 FROM inventory""")
     rows = c.fetchall()
     conn.close()
     return rows
@@ -613,6 +645,42 @@ def update_repair_status(repair_id: int, new_status: str, action_by: str, commen
     except Exception as e:
         print(f"update_repair_status error: {e}")
         return False
+
+def delete_repair_order(repair_id: int) -> bool:
+    """
+    Delete a repair order and all associated data (parts and history).
+    
+    Args:
+        repair_id: The repair order ID to delete
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    from modules.transaction_manager import transaction
+    
+    try:
+        with transaction() as conn:
+            c = conn.cursor()
+            
+            # Delete repair parts first (foreign key constraint)
+            c.execute("DELETE FROM repair_parts WHERE repair_id = ?", (repair_id,))
+            
+            # Delete repair history
+            c.execute("DELETE FROM repair_history WHERE repair_id = ?", (repair_id,))
+            
+            # Delete the repair order itself
+            c.execute("DELETE FROM repair_orders WHERE repair_id = ?", (repair_id,))
+            
+            # Check if any rows were affected
+            if c.rowcount == 0:
+                print(f"delete_repair_order: No repair order found with ID {repair_id}")
+                return False
+        
+        return True
+    except Exception as e:
+        print(f"delete_repair_order error: {e}")
+        return False
+
 
 def get_repair_parts_total(repair_id: int) -> float:
     conn = get_conn(); c = conn.cursor()

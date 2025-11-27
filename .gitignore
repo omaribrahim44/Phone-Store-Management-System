@@ -144,3 +144,40 @@ shop.db
 
 # Config file (local settings)
 shop_config.json
+
+# Local configuration files (user-specific settings)
+barcode_scanner_config.json
+label_preferences.json
+quick_add_templates.json
+barcode_products.json
+
+# Generated receipts and reports
+receipts/*.pdf
+reports/*.pdf
+*.pdf
+
+# Test database
+test_shop.db
+
+# Generated labels
+labels/*.pdf
+labels/*.png
+
+# Documentation files (development only)
+*_COMPLETE.md
+*_GUIDE.md
+*_FEATURE.md
+*_IMPLEMENTATION.md
+*_TESTING.md
+*_AUDIT.md
+*_SUMMARY.md
+*_VERIFICATION.md
+*_ENHANCEMENTS.md
+*_IMPROVEMENTS.md
+*_RESULTS.md
+*_REFERENCE.md
+*_CREDENTIALS.md
+*_DEPLOYMENT.md
+*_SETUP.md
+*_EXAMPLE.txt
+*_REFERENCE.txt

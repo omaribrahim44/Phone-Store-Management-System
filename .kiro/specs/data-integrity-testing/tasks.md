@@ -207,7 +207,15 @@
   - **Property 16: Cascading repair deletion**
   - **Validates: Requirements 5.5**
 
-- [ ] 7.7 Write unit test for repair completion validation
+- [ ] 7.7 Write property test for part linking atomicity
+  - **Property 37: Part linking atomicity**
+  - **Validates: Requirements 5.6**
+
+- [ ] 7.8 Write property test for checkout receipt generation
+  - **Property 38: Checkout receipt generation**
+  - **Validates: Requirements 5.7**
+
+- [ ] 7.9 Write unit test for repair completion validation
   - Test that marking repair as completed requires all fields populated
   - _Requirements: 5.3_
 

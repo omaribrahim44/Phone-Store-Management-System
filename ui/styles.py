@@ -21,28 +21,28 @@ def apply_styles(theme_name="flatly"):
     # === PROFESSIONAL TREEVIEW/TABLE STYLES ===
     # Main table styling - Enhanced for better readability
     style.configure("Treeview",
-                   rowheight=38,  # Larger rows for comfortable reading
+                   rowheight=40,  # Even larger rows for maximum comfort
                    font=("Segoe UI", 11),
                    background="#FFFFFF",
                    fieldbackground="#FFFFFF",
                    borderwidth=0)
     
-    # Header styling - Navy blue professional look
+    # Header styling - Modern gradient-like dark header
     style.configure("Treeview.Heading",
-                   font=("Segoe UI", 11, "bold"),
-                   background="#2C5282",
+                   font=("Segoe UI", 12, "bold"),  # Larger, bolder font
+                   background="#1A365D",  # Darker navy for more contrast
                    foreground="white",
-                   borderwidth=1,
+                   borderwidth=0,
                    relief="flat",
-                   padding=10)
+                   padding=12)  # More padding
     
-    # Header hover effect
+    # Header hover effect - Lighter blue
     style.map("Treeview.Heading",
-             background=[("active", "#1A365D")])
+             background=[("active", "#2C5282")])
     
-    # Selection styling - Bright blue highlight
+    # Selection styling - Vibrant blue highlight
     style.map("Treeview",
-             background=[("selected", "#4299E1")],
+             background=[("selected", "#3182CE")],  # Slightly darker blue
              foreground=[("selected", "white")])
     
     # Custom styles for specific widgets
@@ -93,3 +93,95 @@ def configure_table_tags(tree, table_type="general"):
         tree.tag_configure("medium", background="#FED7AA", foreground="#7C2D12")
         tree.tag_configure("low", background="#E0E7FF", foreground="#3730A3")
         tree.tag_configure("info", background="#DBEAFE", foreground="#1E40AF")
+
+
+# Status Badge Color Schemes
+STATUS_BADGE_COLORS = {
+    "success": {"bg": "#48BB78", "fg": "white"},      # Green
+    "warning": {"bg": "#ED8936", "fg": "white"},      # Orange
+    "danger": {"bg": "#F56565", "fg": "white"},       # Red
+    "info": {"bg": "#4299E1", "fg": "white"},         # Blue
+    "secondary": {"bg": "#A0AEC0", "fg": "white"},    # Gray
+    "primary": {"bg": "#3182CE", "fg": "white"},      # Dark Blue
+}
+
+# Stock Level Colors
+STOCK_COLORS = {
+    "adequate": "#28a745",      # Green - stock >= 10
+    "low": "#fd7e14",           # Orange - 5 <= stock < 10
+    "critical": "#dc3545",      # Red - 0 < stock < 5
+    "out": "#6c757d"            # Gray - stock == 0
+}
+
+# Loading Indicator Style
+LOADING_STYLE = {
+    "text": "⏳ Loading...",
+    "font": ("Segoe UI", 10, "italic"),
+    "foreground": "#718096"
+}
+
+
+
+def get_stock_color(quantity):
+    """
+    Get color for stock quantity based on thresholds.
+    
+    Args:
+        quantity: int - Stock quantity
+    
+    Returns:
+        str - Color code
+    """
+    if quantity >= 10:
+        return STOCK_COLORS["adequate"]
+    elif 5 <= quantity < 10:
+        return STOCK_COLORS["low"]
+    elif 0 < quantity < 5:
+        return STOCK_COLORS["critical"]
+    else:  # quantity == 0
+        return STOCK_COLORS["out"]
+
+
+def get_stock_tag(quantity):
+    """
+    Get tag name for stock quantity.
+    
+    Args:
+        quantity: int - Stock quantity
+    
+    Returns:
+        str - Tag name
+    """
+    if quantity >= 10:
+        return "in_stock"
+    elif 5 <= quantity < 10:
+        return "low_stock"
+    else:
+        return "out_of_stock"
+
+
+def create_status_badge(parent, status, badge_type="status"):
+    """
+    Create a status badge label with appropriate styling.
+    
+    Args:
+        parent: Parent widget
+        status: Status text to display
+        badge_type: Type of badge ("success", "warning", "danger", "info", "secondary", "primary")
+    
+    Returns:
+        tb.Label - Configured badge label
+    """
+    colors = STATUS_BADGE_COLORS.get(badge_type, STATUS_BADGE_COLORS["secondary"])
+    
+    badge = tb.Label(
+        parent,
+        text=status,
+        font=("Segoe UI", 9, "bold"),
+        background=colors["bg"],
+        foreground=colors["fg"],
+        padding=(8, 4),
+        relief="flat"
+    )
+    
+    return badge

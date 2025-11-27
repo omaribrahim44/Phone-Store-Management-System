@@ -167,7 +167,7 @@ class RepairOrder:
     customer_name: str
     customer_phone: str  # Normalized format
     device_model: str
-    imei: str
+    imei: Optional[str]  # Optional field
     reported_problem: str
     received_date: str
     estimated_delivery: str
@@ -264,6 +264,14 @@ rectness Properties
 **Property 16: Cascading repair deletion**
 *For any* repair order, deleting it must also delete all associated repair_parts and repair_history entries.
 **Validates: Requirements 5.5**
+
+**Property 37: Part linking atomicity**
+*For any* part added to a repair order, the part must be linked to the repair atomically and the total estimate must be updated immediately.
+**Validates: Requirements 5.6**
+
+**Property 38: Checkout receipt generation**
+*For any* repair checkout that is saved, a receipt must be generated with all repair details, parts, and payment information.
+**Validates: Requirements 5.7**
 
 ### Backup and Restore Properties
 
@@ -429,7 +437,7 @@ def repair_order(draw):
         'customer_name': draw(st.text(min_size=1, max_size=100)),
         'customer_phone': draw(st.from_regex(r'\d{10,15}', fullmatch=True)),
         'device_model': draw(st.sampled_from(['iPhone 12', 'Samsung S21', 'Pixel 6', 'OnePlus 9'])),
-        'imei': draw(st.from_regex(r'\d{15}', fullmatch=True)),
+        'imei': draw(st.one_of(st.none(), st.from_regex(r'\d{15}', fullmatch=True))),  # Optional: can be None or valid IMEI
         'problem': draw(st.text(min_size=10, max_size=200)),
         'technician': draw(st.text(min_size=1, max_size=50))
     }

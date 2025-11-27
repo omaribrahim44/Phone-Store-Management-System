@@ -30,9 +30,28 @@ class SalesFrame:
         # Title
         tb.Label(left_panel, text="📦 Product Selection", font=("Segoe UI", 16, "bold")).grid(row=0, column=0, sticky="w", pady=(0, 15))
         
+        # Barcode Scanner Input - PRIORITY
+        barcode_frame = tb.Labelframe(left_panel, text="🔍 Barcode Scanner", padding=10, bootstyle="primary")
+        barcode_frame.grid(row=1, column=0, sticky="ew", pady=(0, 15))
+        barcode_frame.columnconfigure(1, weight=1)
+        
+        tb.Label(barcode_frame, text="Scan/Enter Barcode:", font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w", padx=(0, 10))
+        self.barcode_var = tb.StringVar()
+        self.barcode_entry = tb.Entry(barcode_frame, textvariable=self.barcode_var, font=("Segoe UI", 12), width=25)
+        self.barcode_entry.grid(row=0, column=1, sticky="ew", padx=(0, 10))
+        self.barcode_entry.bind('<Return>', self.scan_barcode)
+        self.barcode_entry.focus()  # Auto-focus for scanner
+        
+        # Scan button
+        tb.Button(barcode_frame, text="📷 Scan", bootstyle="success", command=self.scan_barcode).grid(row=0, column=2)
+        
+        # Status label
+        self.barcode_status = tb.Label(barcode_frame, text="Ready to scan", font=("Segoe UI", 9), bootstyle="info")
+        self.barcode_status.grid(row=1, column=0, columnspan=3, sticky="w", pady=(5, 0))
+        
         # Search
         search_frame = tb.Frame(left_panel)
-        search_frame.grid(row=1, column=0, sticky="ew", pady=(0, 10))
+        search_frame.grid(row=2, column=0, sticky="ew", pady=(0, 10))
         search_frame.columnconfigure(1, weight=1)
         
         tb.Label(search_frame, text="Search:", font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w", padx=(0, 10))
@@ -42,7 +61,7 @@ class SalesFrame:
         
         # Category filter
         filter_frame = tb.Frame(left_panel)
-        filter_frame.grid(row=2, column=0, sticky="ew", pady=(0, 10))
+        filter_frame.grid(row=3, column=0, sticky="ew", pady=(0, 10))
         
         # Import categories from constants for consistency
         from modules.constants import PRODUCT_CATEGORIES
@@ -55,7 +74,7 @@ class SalesFrame:
         
         # Inventory table
         inv_frame = tb.Frame(left_panel)
-        inv_frame.grid(row=3, column=0, sticky="nsew", pady=(0, 10))
+        inv_frame.grid(row=4, column=0, sticky="nsew", pady=(0, 10))
         inv_frame.columnconfigure(0, weight=1)
         inv_frame.rowconfigure(0, weight=1)
         
@@ -88,7 +107,7 @@ class SalesFrame:
         self.inv_tree.tag_configure("out_of_stock", foreground="#dc3545", font=("Segoe UI", 10, "bold"))
         
         # Add button
-        tb.Button(left_panel, text="➕ Add to Cart", bootstyle="success", command=self.add_to_cart).grid(row=4, column=0, sticky="ew")
+        tb.Button(left_panel, text="➕ Add to Cart", bootstyle="success", command=self.add_to_cart).grid(row=5, column=0, sticky="ew")
         
         # Double-click to add
         self.inv_tree.bind("<Double-1>", lambda e: self.add_to_cart())
@@ -191,17 +210,25 @@ class SalesFrame:
         self.cart_tree.column("price", width=130, anchor="center", minwidth=110)
         self.cart_tree.column("total", width=150, anchor="center", minwidth=130)
         
-        # Enhanced style for cart tree - MUCH MORE COMFORTABLE AND VISUAL
+        # Enhanced style for cart tree - professional appearance
         style = ttk.Style()
         style.configure("Treeview", 
-                       rowheight=42,  # Increased from 35 to 42 for better spacing
-                       font=("Segoe UI", 13),  # Larger font
+                       rowheight=38,  # Comfortable row height
+                       font=("Segoe UI", 11),  # Clear, readable font
                        background="#FFFFFF",
-                       fieldbackground="#FFFFFF")
+                       fieldbackground="#FFFFFF",
+                       borderwidth=0)
         style.configure("Treeview.Heading", 
-                       font=("Segoe UI", 13, "bold"),  # Larger header font
-                       padding=12)  # More padding
-        style.map("Treeview", background=[("selected", "#0078D7")])
+                       font=("Segoe UI", 10, "bold"),  # Professional headers
+                       padding=10,
+                       background="#2C5282",  # Professional blue
+                       foreground="white",
+                       borderwidth=0,
+                       relief="flat")
+        style.map("Treeview.Heading", background=[("active", "#3182CE")])  # Lighter blue on hover
+        style.map("Treeview",
+                 background=[("selected", "#3182CE")],
+                 foreground=[("selected", "white")])
         
         # Add alternating row colors for better readability
         self.cart_tree.tag_configure('oddrow', background='#F8F9FA')
@@ -421,6 +448,99 @@ class SalesFrame:
     
 
 
+    def scan_barcode(self, event=None):
+        """Scan barcode and add to cart"""
+        barcode = self.barcode_var.get().strip()
+        
+        if not barcode:
+            self.barcode_status.configure(text="⚠️ Please enter a barcode", bootstyle="warning")
+            return
+        
+        try:
+            # Import barcode manager
+            from modules.barcode_manager import get_barcode_info, mark_barcode_sold, BarcodeStatus
+            
+            # Look up barcode
+            barcode_info = get_barcode_info(barcode)
+            
+            if not barcode_info:
+                self.barcode_status.configure(text=f"❌ Barcode not found: {barcode}", bootstyle="danger")
+                self.barcode_var.set("")
+                messagebox.showerror(
+                    "Barcode Not Found",
+                    f"Barcode '{barcode}' is not registered in the system.\n\n"
+                    "Please add this barcode to a product first."
+                )
+                return
+            
+            # Extract info
+            barcode_id, item_id, bc, serial, status, added_date, sold_date, sale_id, notes, item_name, sell_price, sku = barcode_info
+            
+            # Check if already sold
+            if status != BarcodeStatus.AVAILABLE:
+                self.barcode_status.configure(text=f"❌ Already {status}: {barcode}", bootstyle="danger")
+                self.barcode_var.set("")
+                messagebox.showerror(
+                    "Item Not Available",
+                    f"This item has already been {status}.\n\n"
+                    f"Barcode: {barcode}\n"
+                    f"Serial: {serial or 'N/A'}\n"
+                    f"Product: {item_name}"
+                )
+                return
+            
+            # Add to cart with barcode info
+            self.add_barcode_to_cart(item_id, barcode, serial, item_name, sell_price, sku)
+            
+            # Success feedback
+            self.barcode_status.configure(text=f"✓ Added: {item_name} ({barcode})", bootstyle="success")
+            self.barcode_var.set("")
+            self.barcode_entry.focus()
+            
+        except Exception as e:
+            self.barcode_status.configure(text=f"❌ Error: {str(e)}", bootstyle="danger")
+            messagebox.showerror("Scan Error", f"Error scanning barcode:\n\n{str(e)}")
+            self.barcode_var.set("")
+    
+    def add_barcode_to_cart(self, item_id, barcode, serial, item_name, sell_price, sku):
+        """Add item to cart using barcode (individual tracking)"""
+        # Get item details from inventory
+        for row in self.all_inventory:
+            if row[0] == item_id:
+                buy_price = float(row[5])
+                category = row[3] if len(row) > 3 else "Unknown"
+                
+                # Add to cart with barcode info
+                self.cart.append({
+                    'id': item_id,
+                    'sku': sku,
+                    'name': f"{item_name} [{barcode}]",  # Show barcode in cart
+                    'category': category,
+                    'qty': 1,  # Always 1 for barcode items
+                    'price': sell_price,
+                    'cost': buy_price,
+                    'max_qty': 1,  # Can't increase qty for barcode items
+                    'barcode': barcode,  # Track which barcode
+                    'serial': serial  # Track serial number
+                })
+                self.update_cart_view()
+                return
+        
+        # If not found in inventory, still add (shouldn't happen)
+        self.cart.append({
+            'id': item_id,
+            'sku': sku,
+            'name': f"{item_name} [{barcode}]",
+            'category': 'Unknown',
+            'qty': 1,
+            'price': sell_price,
+            'cost': 0,
+            'max_qty': 1,
+            'barcode': barcode,
+            'serial': serial
+        })
+        self.update_cart_view()
+    
     def add_to_cart(self):
         sel = self.inv_tree.selection()
         if not sel:
@@ -663,6 +783,16 @@ class SalesFrame:
             )
             
             if sale_id:
+                # Mark barcodes as sold
+                from modules.barcode_manager import mark_barcode_sold
+                for item in self.cart:
+                    if 'barcode' in item and item['barcode']:
+                        try:
+                            mark_barcode_sold(item['barcode'], sale_id)
+                            print(f"✓ Marked barcode {item['barcode']} as sold")
+                        except Exception as e:
+                            print(f"Warning: Could not mark barcode {item['barcode']} as sold: {e}")
+                
                 # Calculate totals for receipt
                 subtotal = sum([i['qty']*i['price'] for i in self.cart])
                 try:
@@ -676,6 +806,14 @@ class SalesFrame:
                 
                 # Store sale data for receipt with MORE details
                 receipt_items = [(i['sku'], i['name'], i['qty'], i['price'], i['qty']*i['price']) for i in self.cart]
+                
+                # Get current username if available
+                try:
+                    import getpass
+                    username = getpass.getuser()
+                except:
+                    username = "Cashier"
+                
                 sale_data = {
                     'sale_id': sale_id,
                     'date_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -688,7 +826,8 @@ class SalesFrame:
                     'discount_amount': discount_amount,
                     'grand_total': grand_total,
                     'payment_method': payment_method,
-                    'notes': notes
+                    'notes': notes,
+                    'served_by': username  # Add username to receipt
                 }
                 
                 # Reset cart and form BEFORE showing success dialog
@@ -748,7 +887,7 @@ class SalesFrame:
         
         # === PRINT BUTTON FUNCTIONS - DEFINE FIRST ===
         def print_receipt():
-            """Generate and print receipt"""
+            """Generate and print receipt (PDF)"""
             try:
                 # Force reload the module to avoid cache issues
                 import importlib
@@ -768,6 +907,30 @@ class SalesFrame:
                 import traceback
                 error_details = traceback.format_exc()
                 messagebox.showerror("Receipt Error", f"Could not generate receipt:\n\n{str(e)}\n\nDetails:\n{error_details[:200]}")
+        
+        def print_thermal():
+            """Print to thermal printer"""
+            try:
+                from modules.reports.thermal_printer import print_thermal_receipt
+                
+                # Prepare shop info
+                shop_info = {
+                    'shop_name': 'MOBILE CARE CENTER',
+                    'phone': '012-345-6789',
+                    'address': ''
+                }
+                
+                # Print to thermal printer
+                success = print_thermal_receipt(sale_data, receipt_items, shop_info=shop_info)
+                
+                if success:
+                    messagebox.showinfo("✓ Printed", "Receipt sent to thermal printer successfully!")
+                else:
+                    messagebox.showerror("Print Error", "Could not print to thermal printer.\n\nPlease check:\n- Printer is connected\n- Printer is turned on\n- Printer is set as default")
+            except ImportError:
+                messagebox.showerror("Module Error", "Thermal printer module not available.\n\nPlease install: pip install pywin32")
+            except Exception as e:
+                messagebox.showerror("Print Error", f"Could not print to thermal printer:\n\n{str(e)}")
         
         def close_dialog():
             dialog.destroy()
@@ -1037,26 +1200,37 @@ class SalesFrame:
         buttons_row = tb.Frame(buttons_container)
         buttons_row.pack(expand=True)
         
-        # Print Receipt button - LARGE AND BLUE
+        # Thermal Print button - LARGE AND INFO
+        thermal_btn = tb.Button(
+            buttons_row,
+            text="🔥  THERMAL PRINT",
+            bootstyle="info",
+            command=print_thermal,
+            width=22
+        )
+        thermal_btn.pack(side="left", padx=10, ipady=12)
+        thermal_btn.configure(cursor="hand2")
+        
+        # Print Receipt button (PDF) - LARGE AND PRIMARY
         print_btn = tb.Button(
             buttons_row,
-            text="🖨️  PRINT RECEIPT",
+            text="📄  PDF RECEIPT",
             bootstyle="primary",
             command=print_receipt,
-            width=25
+            width=22
         )
-        print_btn.pack(side="left", padx=20, ipady=12)
+        print_btn.pack(side="left", padx=10, ipady=12)
         print_btn.configure(cursor="hand2")
         
-        # Close button - LARGE AND GREEN
+        # Close button - LARGE AND SUCCESS
         close_btn = tb.Button(
             buttons_row,
             text="✓  CLOSE",
             bootstyle="success",
             command=close_dialog,
-            width=25
+            width=22
         )
-        close_btn.pack(side="left", padx=20, ipady=12)
+        close_btn.pack(side="left", padx=10, ipady=12)
         close_btn.configure(cursor="hand2")
         
         # Bind mouse wheel

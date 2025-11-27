@@ -2,20 +2,40 @@
 # controllers/auth_controller.py
 from modules import models
 from modules.audit_logger import log_action
+from modules import session
 
 class AuthController:
     @staticmethod
     def login(username, password):
+        """
+        Authenticate user and create session.
+        
+        Args:
+            username: Username
+            password: Plain text password
+        
+        Returns:
+            User data if successful, None otherwise
+        """
         user = models.get_user(username)
         if user and models.verify_password(user[2], password):
+            # Create session
+            session.login(user)
+            return user
+        else:
+            # Log failed login attempt
             log_action(
                 user=username,
-                action_type="LOGIN",
+                action_type="LOGIN_FAILED",
                 entity_type="user",
-                description=f"User {username} logged in"
+                description=f"Failed login attempt for user: {username}"
             )
-            return user
         return None
+    
+    @staticmethod
+    def logout():
+        """Log out current user and clear session"""
+        session.logout()
     
     @staticmethod
     def get_all_users():

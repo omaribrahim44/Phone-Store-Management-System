@@ -41,5 +41,13 @@ if __name__ == "__main__":
     theme = cfg.get("theme", "cosmo")
     log.info(f"Loaded configuration. Theme: {theme}")
 
-    # Start the UI application
+    # TEMPORARY: Skip login for testing
+    # To enable login, uncomment the lines below and comment out start_app()
+    
+    # from ui.login_view import show_login
+    # log.info("Showing login screen...")
+    # show_login(lambda: start_app(theme_name=theme))
+    
+    # Direct start without login (TEMPORARY)
+    log.info("Starting application without login (login disabled for testing)...")
     start_app(theme_name=theme)
