@@ -308,17 +308,22 @@ Test coverage includes:
 
 ```
 Phone-Store-Management-System/
-├── controllers/          # Business logic
-├── modules/             # Core functionality
-├── ui/                  # User interface components
-├── tests/               # Test suite
-├── backups/             # Database backups
-├── logs/                # Application logs
-├── app.py              # Application entry point
-├── db_init.py          # Database initialization
-├── requirements.txt    # Python dependencies
-└── README.md           # This file
+├── 📄 INSTALL_AND_RUN.bat    ⭐ One-click installer & launcher
+├── 📄 README.md               Main documentation
+├── 🐍 app.py                  Application entry point
+├── 📁 controllers/            Business logic
+├── 📁 modules/                Core functionality
+├── 📁 ui/                     User interface components
+├── 📁 tests/                  Test suite
+├── 📁 docs/                   Documentation
+├── 📁 scripts/                Utility scripts
+├── 📁 config/                 Configuration examples
+├── 📁 backups/                Database backups (gitignored)
+├── 📁 logs/                   Application logs (gitignored)
+└── 📁 receipts/               Generated receipts (gitignored)
 ```
+
+📖 **See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for detailed structure**
 
 ## 🔧 Configuration
 

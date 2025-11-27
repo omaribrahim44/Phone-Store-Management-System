@@ -1,0 +1,17 @@
+{
+  "scanner_type": "USB",
+  "auto_enter": true,
+  "prefix": "",
+  "suffix": "",
+  "min_length": 8,
+  "max_length": 20,
+  "beep_on_success": true,
+  "beep_on_error": true,
+  "auto_quantity": 1,
+  "quick_add_mode": true,
+  "duplicate_handling": "increment",
+  "scan_delay_ms": 100,
+  "default_category": "Mobile Phones",
+  "default_condition": "New",
+  "default_warranty": 12
+}

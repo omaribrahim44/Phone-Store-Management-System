@@ -1,0 +1,8 @@
+{
+    "default_label_size": "small",
+    "show_cut_lines": true,
+    "default_quantity": 1,
+    "auto_print_new_products": false,
+    "paper_size": "letter",
+    "last_output_directory": "labels/"
+}

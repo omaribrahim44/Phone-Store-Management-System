@@ -1,0 +1,58 @@
+{
+  "194252707050": {
+    "name": "iPhone 14 Pro Max",
+    "brand": "Apple",
+    "model": "iPhone 14 Pro Max",
+    "category": "Mobile Phones",
+    "storage": "256GB",
+    "ram": "6GB",
+    "color": "Deep Purple",
+    "condition": "New",
+    "buy_price": 45000.0,
+    "sell_price": 52000.0,
+    "warranty_months": 12,
+    "description": "Latest iPhone with Dynamic Island"
+  },
+  "194253001799": {
+    "name": "iPhone 15 Pro",
+    "brand": "Apple",
+    "model": "iPhone 15 Pro",
+    "category": "Mobile Phones",
+    "storage": "256GB",
+    "ram": "8GB",
+    "color": "Natural Titanium",
+    "condition": "New",
+    "buy_price": 48000.0,
+    "sell_price": 55000.0,
+    "warranty_months": 12,
+    "description": "iPhone 15 Pro with A17 Pro chip"
+  },
+  "8806094937350": {
+    "name": "Samsung Galaxy S24 Ultra",
+    "brand": "Samsung",
+    "model": "Galaxy S24 Ultra",
+    "category": "Mobile Phones",
+    "storage": "512GB",
+    "ram": "12GB",
+    "color": "Titanium Black",
+    "condition": "New",
+    "buy_price": 50000.0,
+    "sell_price": 58000.0,
+    "warranty_months": 12,
+    "description": "Samsung flagship with S Pen"
+  },
+  "6941812738894": {
+    "name": "Xiaomi 14 Pro",
+    "brand": "Xiaomi",
+    "model": "Xiaomi 14 Pro",
+    "category": "Mobile Phones",
+    "storage": "256GB",
+    "ram": "12GB",
+    "color": "Black",
+    "condition": "New",
+    "buy_price": 28000.0,
+    "sell_price": 33000.0,
+    "warranty_months": 12,
+    "description": "Xiaomi flagship with Leica camera"
+  }
+}

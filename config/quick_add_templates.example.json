@@ -1,0 +1,144 @@
+{
+  "New Phone - Premium": {
+    "category": "Mobile Phones",
+    "condition": "New",
+    "warranty_months": 12,
+    "buy_price": 0,
+    "sell_price": 0,
+    "description": "Brand new premium phone",
+    "auto_sku": true,
+    "sku_prefix": "NEW-"
+  },
+  "Used Phone - Like New": {
+    "category": "Mobile Phones",
+    "condition": "Used - Like New",
+    "warranty_months": 6,
+    "buy_price": 0,
+    "sell_price": 0,
+    "description": "Excellent condition, minimal wear",
+    "auto_sku": true,
+    "sku_prefix": "USED-LN-"
+  },
+  "Used Phone - Good": {
+    "category": "Mobile Phones",
+    "condition": "Used - Good",
+    "warranty_months": 3,
+    "buy_price": 0,
+    "sell_price": 0,
+    "description": "Good condition, normal wear",
+    "auto_sku": true,
+    "sku_prefix": "USED-G-"
+  },
+  "Used Phone - Fair": {
+    "category": "Mobile Phones",
+    "condition": "Used - Fair",
+    "warranty_months": 1,
+    "buy_price": 0,
+    "sell_price": 0,
+    "description": "Fair condition, visible wear",
+    "auto_sku": true,
+    "sku_prefix": "USED-F-"
+  },
+  "Refurbished Phone": {
+    "category": "Mobile Phones",
+    "condition": "Refurbished",
+    "warranty_months": 6,
+    "buy_price": 0,
+    "sell_price": 0,
+    "description": "Professionally refurbished",
+    "auto_sku": true,
+    "sku_prefix": "REF-"
+  },
+  "iPhone - Used": {
+    "category": "Mobile Phones",
+    "brand": "Apple",
+    "condition": "Used - Good",
+    "warranty_months": 3,
+    "buy_price": 0,
+    "sell_price": 0,
+    "description": "Used iPhone",
+    "auto_sku": true,
+    "sku_prefix": "IP-USED-"
+  },
+  "Samsung - New": {
+    "category": "Mobile Phones",
+    "brand": "Samsung",
+    "condition": "New",
+    "warranty_months": 12,
+    "buy_price": 0,
+    "sell_price": 0,
+    "description": "New Samsung device",
+    "auto_sku": true,
+    "sku_prefix": "SAM-"
+  },
+  "Chinese Phone - Generic": {
+    "category": "Mobile Phones",
+    "condition": "New",
+    "warranty_months": 12,
+    "buy_price": 0,
+    "sell_price": 0,
+    "description": "Imported phone",
+    "auto_sku": true,
+    "sku_prefix": "CN-"
+  },
+  "Phone Case": {
+    "category": "Phone Cases & Covers",
+    "condition": "New",
+    "warranty_months": 3,
+    "buy_price": 0,
+    "sell_price": 0,
+    "description": "Phone protective case",
+    "auto_sku": true,
+    "sku_prefix": "CASE-"
+  },
+  "Charger & Cable": {
+    "category": "Chargers & Cables",
+    "condition": "New",
+    "warranty_months": 6,
+    "buy_price": 0,
+    "sell_price": 0,
+    "description": "Phone charger or cable",
+    "auto_sku": true,
+    "sku_prefix": "CHG-"
+  },
+  "AirPods & Earphones": {
+    "category": "AirPods & Earphones",
+    "condition": "New",
+    "warranty_months": 6,
+    "buy_price": 0,
+    "sell_price": 0,
+    "description": "Wireless or wired earphones",
+    "auto_sku": true,
+    "sku_prefix": "AUDIO-"
+  },
+  "Screen Protector": {
+    "category": "Screen Protectors",
+    "condition": "New",
+    "warranty_months": 0,
+    "buy_price": 0,
+    "sell_price": 0,
+    "description": "Tempered glass or film protector",
+    "auto_sku": true,
+    "sku_prefix": "SP-"
+  },
+  "Phone Accessory": {
+    "category": "Phone Accessories",
+    "condition": "New",
+    "warranty_months": 6,
+    "buy_price": 0,
+    "sell_price": 0,
+    "description": "General phone accessory",
+    "auto_sku": true,
+    "sku_prefix": "ACC-"
+  },
+  "Repair Part": {
+    "category": "Repair Parts",
+    "condition": "New",
+    "warranty_months": 3,
+    "buy_price": 0,
+    "sell_price": 0,
+    "description": "Replacement part for repairs",
+    "auto_sku": true,
+    "sku_prefix": "PART-"
+  }
+}
